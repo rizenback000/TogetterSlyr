@@ -137,7 +137,6 @@ THE SOFTWARE.
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
-            console.log('complete now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
             const pagenation = self.getPageNation();
             // ページネーションの直後に追加(末尾のulに追加)
@@ -145,6 +144,7 @@ THE SOFTWARE.
               pagenation.parentNode.insertBefore(ul, pagenation);
             });
             tgtPage++;
+            console.log('complete now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
 
             if (tgtPage < maxPage) {
               // 次ページURL取得
