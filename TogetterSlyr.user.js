@@ -162,7 +162,7 @@ THE SOFTWARE.
               setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
             } else {
               self.addEventNinja();
-              self.setStatusText('');
+              self.setStatusText('全ページ読み込み完了');
               console.log('loadend');
             }
           }
