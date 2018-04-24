@@ -156,7 +156,7 @@ THE SOFTWARE.
               }
               // 申し訳程度の負荷分散
               // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
-              const interval = 0.5 + Math.floor(Math.random() * 5) * 1000;
+              const interval = 1 + Math.floor(Math.random() * 5) * 1000;
               console.log(interval);
               setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), interval);
             } else {
