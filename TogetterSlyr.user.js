@@ -156,9 +156,11 @@ THE SOFTWARE.
               }
               // 申し訳程度の負荷分散
               // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
-              const interval = 1 + Math.floor(Math.random() * 5) * 1000;
-              console.log(interval);
-              setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), interval);
+              const delayMin = 1; //秒指定
+              const delayMax = 5;
+              const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
+              console.log(delay);
+              setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
             } else {
               self.addEventNinja();
               self.setStatusText('');
@@ -181,6 +183,7 @@ THE SOFTWARE.
 
   /**
    * モーダルウィンドウ管理
+   * 参考: https://syncer.jp/jquery-modal-window
    */
   class ModalWindow {
     constructor() {
@@ -223,10 +226,9 @@ THE SOFTWARE.
 
       console.log('attach resize event');
       let queue = null;
-      const wait = 300;
       window.addEventListener('resize', function() {
         clearTimeout(queue);
-        queue = setTimeout( ()=> self.centeringModalSyncer(), wait);
+        queue = setTimeout( ()=> self.centeringModalSyncer(), 300);
       });
     }
 
@@ -274,7 +276,7 @@ THE SOFTWARE.
 
     /**
      * centeringModalSyncer - センタリングをする関数
-     * https://syncer.jp/jquery-modal-window
+     * 参考: https://syncer.jp/jquery-modal-window
      * @return {void}
      */
     centeringModalSyncer() {
@@ -383,7 +385,7 @@ THE SOFTWARE.
           const tweetBox = tweet.querySelector('.tweet_wrap');
           tweetBox.style.cursor = 'pointer';
           tweetBox.addEventListener('click', (e) => {
-            const baseTweet = e.srcElement.closest('.list_box.type_tweet');
+            const baseTweet = e.target.closest('.list_box.type_tweet');
             self.reactModal_.show(baseTweet);
           });
         } else {
