@@ -13,5 +13,9 @@ TogetterはTwitterと連携するとページあたりの表示数を変更で�
 1. 1ページあたりの表示数を「250」を選んで、[設定する]をクリック
 1. ページを更新して使い始める
 
+# サポートしているブラウザ
+- Firefox 59.0.2 + Tamppermonkey
+- GoogleChrome 66.0.3359.117 + Tamppermonkey
+
 ## License
 MIT
