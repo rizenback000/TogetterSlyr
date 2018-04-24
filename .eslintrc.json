@@ -1,0 +1,53 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 6
+  },
+  "env": {
+    "browser": true
+  },
+  "extends": "google",
+  "rules" : {
+    "no-extra-semi": "warn",
+    "no-undef": "warn",
+    "quotes": ["off","double"],
+    "space-before-blocks": ["warn", { "functions": "always", "keywords": "always", "classes": "always" }],
+    "no-console": "off",
+    "valid-jsdoc": "warn",
+    "no-eq-null": "error",
+    "no-else-return": "error",
+    "no-floating-decimal": "error",
+    "no-self-compare": "error",
+    "comma-style": ["error", "last"],
+    "indent": ["error", 2],
+    "comma-spacing": ["warn", {"before": false, "after": true}],
+    "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
+    "no-self-compare": "error",
+    "no-redeclare": "error",
+    "no-multi-spaces": "warn",
+    "no-loop-func": "error",
+    "no-labels": "error",
+    "no-iterator": "error",
+    "no-invalid-this": "error",
+    "no-implied-eval": "error",
+    "no-implicit-coercion": "error",
+    "no-floating-decimal": "error",
+    "no-fallthrough": "error",
+    "no-extra-bind": "error",
+    "no-extend-native": "error",
+    "no-eval": "error",
+    "eqeqeq": ["error", "always"],
+    "dot-notation": "error",
+    "default-case": "warn",
+    "block-scoped-var": "error",
+    "max-len": ["error", 100, 2],
+    "block-spacing": ["error", "always"],
+    "camelcase": "error",
+    "prefer-const": "error",
+    "spaced-comment": "error",
+    "no-const-assign": "warn",
+    "no-unused-vars": "warn"
+  },
+  "globals": {
+    "lazyload": false
+  }
+}
