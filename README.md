@@ -9,7 +9,7 @@ Togetterのニンジャスレイヤー実況まとめを見やすくする
 FirefoxかGoogleChromeのどちらかでアドオン「Tampermonkey」をインストールする。
 - [Tampermonkey - Chromeウェブストア](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=ja)
 - [Tampermonkey - Firefox向けアドオン](https://addons.mozilla.org/ja/firefox/addon/tampermonkey/)
-1. TogetterSlyr.user.jsの[Raw][https://github.com/rizenback000/TogetterSlyr/raw/master/TogetterSlyr.user.js]を開くとスクリプトをインストールするか聞かれるのでインストール
+1. TogetterSlyr.user.jsの[Raw](https://github.com/rizenback000/TogetterSlyr/raw/master/TogetterSlyr.user.js)を開くとスクリプトをインストールするか聞かれるのでインストール
 2. Togetterの実況まとめを開く
 
 # 使い方
