@@ -159,7 +159,6 @@ THE SOFTWARE.
               const delayMin = 1; //秒指定
               const delayMax = 5;
               const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
-              console.log(delay);
               setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
             } else {
               self.addEventNinja();
@@ -171,8 +170,7 @@ THE SOFTWARE.
         // console.log('readyState'+xhr.readyState+' status='+xhr.status);
       };
 
-      // 気持ち程度の負荷分散0.5秒～5秒
-      console.log('try now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
+      // console.log('try now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
       self.setStatusText(tgtPage+' ページ目読み込み中...(残り:'+(maxPage-tgtPage)+'ページ)');
       xhr.open('GET', tgtUrl, true);
       xhr.responseType = 'document';
@@ -224,7 +222,6 @@ THE SOFTWARE.
       document.body.appendChild(this.$modalOverlay_);
       document.body.appendChild(this.$modalContent_);
 
-      console.log('attach resize event');
       let queue = null;
       window.addEventListener('resize', function() {
         clearTimeout(queue);
@@ -240,7 +237,7 @@ THE SOFTWARE.
      * @return {void}
      */
     show(baseTweet) {
-      console.log('show');
+      // console.log('show');
 
       this.hide();
       const ul = document.createElement('ul');
@@ -280,7 +277,6 @@ THE SOFTWARE.
      * @return {void}
      */
     centeringModalSyncer() {
-      console.log('centeringModalSyncer');
       const w = window.document.documentElement.clientWidth;
       const h = window.document.documentElement.clientHeight;
       const cw = this.$modalContent_.offsetWidth;
@@ -301,7 +297,7 @@ THE SOFTWARE.
      * @return {void}
      */
     lazySet() {
-      console.log('lazySet');
+      // console.log('lazySet');
       const opt = {
         selector: 'lazy',
         src: 'data-lazy-src',
@@ -317,7 +313,7 @@ THE SOFTWARE.
      * @return {void}
      */
     lazyDestroy() {
-      console.log('lazyDestroy');
+      // console.log('lazyDestroy');
       // 本当に効いてるかどうかわからんけどやらんよりマシ？
       if ( this.lazy !== null) this.lazy.destroy();
     }
@@ -402,7 +398,7 @@ THE SOFTWARE.
      * @return {Element[]}               配列に格納された反応ツイート
      */
     static getReactTweets(officialTweet) {
-      console.log('getReactTweets');
+      // console.log('getReactTweets');
       const reactTweets = [];
       let nextTweet = officialTweet.nextElementSibling;
       while (nextTweet !== null) {
