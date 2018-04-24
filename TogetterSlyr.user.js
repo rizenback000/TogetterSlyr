@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name        TogetterSlyr
-// @namespace   https://github.com/rizenback000
+// @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     0.1
+// @version     1.0.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
-// @author      rb0three
+// @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
 // @grant       none
 // ==/UserScript==
