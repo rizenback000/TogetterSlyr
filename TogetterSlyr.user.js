@@ -40,7 +40,42 @@ THE SOFTWARE.
    * Togetter全般のユーティリティ
    */
   class TogetterUtil {
-    constructor() {}
+    constructor() {
+      this.maxPage_ = this.getMaxPage();
+      this.nowPage_ = this.getNowPage();
+      this.pagination_ = this.getPagination();
+    }
+
+
+    /**
+     * get maxPage - 最大ページ数を取得
+     *
+     * @return {number}  最大ページ数
+     */
+    get maxPage() {
+      return this.maxPage_;
+    }
+
+
+    /**
+     * get nowPage - 現在のページ数を取得
+     *
+     * @return {number}  現在のページ数
+     */
+    get nowPage() {
+      return this.nowPage_;
+    }
+
+
+    /**
+     * get pagination - ページネーションを取得
+     *
+     * @return {ELement}  ページネーション
+     */
+    get pagination() {
+      return this.pagination_;
+    }
+
 
     /**
      * getTweetList - 表示中の全ツイートリストの取得
@@ -64,12 +99,12 @@ THE SOFTWARE.
 
 
     /**
-     * getPageNation - ページネーション取得(下部にあるほう)
+     * getPagination - ページネーション取得(下部にあるほう)
      * 備忘:Togetterの2ページ目以降はページネーションが上にも出るが、常に下を取る
      * @param  {Element=} body 探索するElementを指定する
      * @return {Element}      ページネーション
      */
-    getPageNation(body) {
+    getPagination(body) {
       if (typeof body === 'undefined') body = document;
       return body.querySelector('.tweet_box .pagenation');
     }
@@ -85,7 +120,7 @@ THE SOFTWARE.
       // 備忘: togetterは2ページでも[次へ]があるので、ページネーションの最初から
       // [次へ]が見つかるまで走査していけば最後のページ数が見つかる
       if (typeof body === 'undefined') body = document;
-      let page = this.getPageNation(body).getElementsByTagName('a')[0];
+      let page = this.getPagination(body).getElementsByTagName('a')[0];
       while (page !== null) {
         if (page.nextElementSibling.textContent === '次へ') break;
         page = page.nextElementSibling;
@@ -102,7 +137,7 @@ THE SOFTWARE.
      */
     getNowPage(body) {
       if (typeof body === 'undefined') body = document;
-      return Number(this.getPageNation(body).querySelector('.current').textContent);
+      return Number(this.getPagination(body).querySelector('.current').textContent);
     }
 
 
@@ -114,7 +149,7 @@ THE SOFTWARE.
      */
     getNextPageUrl(body) {
       if (typeof body === 'undefined') body = document;
-      return this.getPageNation(body).querySelector('a[rel=next]').href;
+      return this.getPagination(body).querySelector('a[rel=next]').href;
     }
 
 
@@ -122,44 +157,41 @@ THE SOFTWARE.
      * loadPages - 現在のページから全ページ読み込み
      *
      * @param  {number=} maxPage description
-     * @param  {number=} tgtPage description
      * @param  {string=} tgtUrl  description
      * @return {void}         description
      */
-    loadPages(maxPage, tgtPage, tgtUrl) {
+    loadPages(maxPage, tgtUrl) {
       const self = this;
       const xhr = new XMLHttpRequest();
-      if (typeof maxPage === 'undefined') maxPage = self.getMaxPage();
-      if (typeof tgtPage === 'undefined') tgtPage = self.getNowPage();
+      if (typeof maxPage === 'undefined') maxPage = self.maxPage - self.nowPage;
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
-      let nextPageUrl = self.getNextPageUrl();
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
-            const pagenation = self.getPageNation();
+            const pagination = self.pagination;
             // ページネーションの直後に追加(末尾のulに追加)
             Array.from(resTweets, (ul) => {
-              pagenation.parentNode.insertBefore(ul, pagenation);
+              pagination.parentNode.insertBefore(ul, pagination);
             });
-            tgtPage++;
-            console.log('complete now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
+            maxPage--;
+            console.log('complete maxPage='+maxPage+' url='+tgtUrl);
 
-            if (tgtPage < maxPage) {
+            if (maxPage) {
               // 次ページURL取得
               try {
-                nextPageUrl = self.getNextPageUrl(xhr.response);
+                tgtUrl = self.getNextPageUrl(xhr.response);
               } catch (e) {
                 self.setStatusText('次のURLの読み込み失敗('+e.message+')');
                 return;
+                // 申し訳程度の負荷分散
               }
-              // 申し訳程度の負荷分散
               // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
-              const delayMin = 1; //秒指定
+              const delayMin = 1; // 秒指定
               const delayMax = 5;
               const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
-              setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
+              setTimeout( () => self.loadPages(maxPage, tgtUrl), delay);
             } else {
               self.addEventNinja();
               self.setStatusText('全ページ読み込み完了');
@@ -170,8 +202,7 @@ THE SOFTWARE.
         // console.log('readyState'+xhr.readyState+' status='+xhr.status);
       };
 
-      // console.log('try now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
-      self.setStatusText(tgtPage+' ページ目読み込み中...(残り:'+(maxPage-tgtPage)+'ページ)');
+      self.setStatusText('読み込み中... 残り:'+maxPage+'ページ)');
       xhr.open('GET', tgtUrl, true);
       xhr.responseType = 'document';
       xhr.send();
@@ -261,6 +292,7 @@ THE SOFTWARE.
 
       const ulHeader = document.createElement('ul');
       ulHeader.appendChild(baseTweet.cloneNode(true));
+      this.modalHeader_.innerHTML = '';
       this.modalHeader_.append(ulHeader);
 
       this.modalContentsMain_.innerHTML = '';
@@ -301,8 +333,6 @@ THE SOFTWARE.
 
       this.modalContents_.style.left = pxleft + 'px';
       this.modalContents_.style.top = pxtop + 'px';
-
-
     }
 
 
