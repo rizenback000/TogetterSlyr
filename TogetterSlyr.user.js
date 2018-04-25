@@ -140,26 +140,31 @@ THE SOFTWARE.
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
             const pagenation = self.getPageNation();
             // ページネーションの直後に追加(末尾のulに追加)
-            Array.from(resTweets, (ul) => {
-              pagenation.parentNode.insertBefore(ul, pagenation);
-            });
+            Array.from(resTweets, (ul) => pagenation.parentNode.insertBefore(ul, pagenation));
             tgtPage++;
-            console.log('complete now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
+            console.log('complete now=' + tgtPage + ', maxPage=' + maxPage + ' url=' + tgtUrl);
+
+            // 次ページURL取得
+            try {
+              nextPageUrl = self.getNextPageUrl(xhr.response);
+              console.log(nextPageUrl);
+              pagenation.setAttribute('data-nsnext', nextPageUrl);
+            } catch (e) {
+              console.log('error');
+              console.log(nextPageUrl);
+
+              pagenation.setAttribute('data-nsnext', '');
+              // self.setStatusText('次のURLの読み込み失敗(' + e.message + ')');
+              // return;
+            }
 
             if (tgtPage < maxPage) {
-              // 次ページURL取得
-              try {
-                nextPageUrl = self.getNextPageUrl(xhr.response);
-              } catch (e) {
-                self.setStatusText('次のURLの読み込み失敗('+e.message+')');
-                return;
-              }
               // 申し訳程度の負荷分散
               // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
-              const delayMin = 1; //秒指定
+              const delayMin = 1; // 秒指定
               const delayMax = 5;
-              const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
-              setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
+              const delay = (Math.floor(Math.random() * (delayMax + 1 - delayMin)) + delayMin) * 1000;
+              setTimeout(() => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
             } else {
               self.addEventNinja();
               self.setStatusText('全ページ読み込み完了');
@@ -171,7 +176,7 @@ THE SOFTWARE.
       };
 
       // console.log('try now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
-      self.setStatusText(tgtPage+' ページ目読み込み中...(残り:'+(maxPage-tgtPage)+'ページ)');
+      self.setStatusText(tgtPage + ' ページ目読み込み中...(残り:' + (maxPage - tgtPage) + 'ページ)');
       xhr.open('GET', tgtUrl, true);
       xhr.responseType = 'document';
       xhr.send();
@@ -235,7 +240,7 @@ THE SOFTWARE.
       let queue = null;
       window.addEventListener('resize', function() {
         clearTimeout(queue);
-        queue = setTimeout( ()=> self.centeringModalSyncer(), 300);
+        queue = setTimeout(() => self.centeringModalSyncer(), 300);
       });
     }
 
@@ -301,8 +306,6 @@ THE SOFTWARE.
 
       this.modalContents_.style.left = pxleft + 'px';
       this.modalContents_.style.top = pxtop + 'px';
-
-
     }
 
 
@@ -332,7 +335,7 @@ THE SOFTWARE.
     lazyDestroy() {
       // console.log('lazyDestroy');
       // 本当に効いてるかどうかわからんけどやらんよりマシ？
-      if ( this.lazy !== null) this.lazy.destroy();
+      if (this.lazy !== null) this.lazy.destroy();
     }
   }
 
@@ -347,7 +350,7 @@ THE SOFTWARE.
 
       // 実況まとめなのかを判断する
       const tweets = this.getTweetList();
-      const nijaSoul = [].slice.call(tweets).some((tweet)=>NinjaManager.isNinja(tweet));
+      const nijaSoul = [].slice.call(tweets).some((tweet) => NinjaManager.isNinja(tweet));
       if (nijaSoul === false) return;
 
       // リアクション表示モーダルウィンドウ
@@ -361,7 +364,7 @@ THE SOFTWARE.
       this.loadBtn_.addEventListener('click', function(e) {
         self.loadBtn_.style.display = 'none';
         document.getElementsByClassName('contents_main')[0].style.display = 'none';
-        self.loadPages();
+        self.loadPages(3, 2);
         document.getElementsByClassName('contents_main')[0].style.display = 'block';
       });
       document.getElementsByClassName('title_box')[0].append(this.loadBtn_);
@@ -370,6 +373,11 @@ THE SOFTWARE.
       // 続きを読むがあればクリック
       const readMore = document.querySelector('.more_tweet_box .btn');
       if (readMore !== null) readMore.click();
+
+      // シームレスロード
+
+      window.onscroll = () => self.seamlessLoad();
+
     }
 
 
@@ -409,6 +417,43 @@ THE SOFTWARE.
 
 
     /**
+     * seamlessLoad - Autopagerizeのように画面下まで来ると1ページロード
+     * 参考: https://q-az.net/without-jquery-height-width-offset-scrolltop/
+     *
+     * @return {void}
+     */
+    seamlessLoad() {
+      let loadingFlag = false; // 読み込み中はtrueにして、複数回発生しないようにする
+      const pagenation = this.getPageNation();
+      const nextPage = pagenation.getAttribute('data-nsnext');
+      console.log('scroll');
+
+      // 次のページ読み込み中の場合は処理を行わない
+      if (nextPage !== '') {
+        const winHeight = window.innerHeight;
+        const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
+
+        const rect = pagenation.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const pagenationTop = rect.top + scrollTop;
+
+        const linkPos = pagenationTop;
+
+
+        console.log(winHeight + scrollPos + '>'+ linkPos);
+
+        if (winHeight + scrollPos > linkPos) {
+          // 次のページのリンクを取得して、要素を削除しておく
+          const nextPage = pagenation.getAttribute('data-nsnext');
+          pagenation.setAttribute('data-nsnext', '');
+          // 次のページがある場合はリンクを追加する
+          console.log(nextPage);
+        }
+      }
+    }
+
+
+    /**
      * getReactTweets - 公式ツイートの反応ツイートを抜き出す
      *
      * @param  {Element} officialTweet 反応ツイートの基準となる公式ツイート
@@ -420,7 +465,7 @@ THE SOFTWARE.
       let nextTweet = officialTweet.nextElementSibling;
       while (nextTweet !== null) {
         // 次の公式ツイートが出てきたら停止
-        if ( NinjaManager.isNinja(nextTweet) ) break;
+        if (NinjaManager.isNinja(nextTweet)) break;
         const cloneTweet = nextTweet.cloneNode(true);
         cloneTweet.style.display = 'block';
         reactTweets.push(cloneTweet);
