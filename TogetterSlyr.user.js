@@ -168,7 +168,6 @@ THE SOFTWARE.
       if (typeof tgtPage === 'undefined') tgtPage = self.nowPage;
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
-      let nextPageUrl = self.getNextPageUrl();
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
@@ -184,7 +183,7 @@ THE SOFTWARE.
             if (tgtPage < maxPage) {
               // 次ページURL取得
               try {
-                nextPageUrl = self.getNextPageUrl(xhr.response);
+                tgtUrl = self.getNextPageUrl(xhr.response);
               } catch (e) {
                 self.setStatusText('次のURLの読み込み失敗('+e.message+')');
                 return;
@@ -194,7 +193,7 @@ THE SOFTWARE.
               const delayMin = 1; // 秒指定
               const delayMax = 5;
               const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
-              setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
+              setTimeout( () => self.loadPages(maxPage, tgtPage, tgtUrl), delay);
             } else {
               self.addEventNinja();
               self.setStatusText('全ページ読み込み完了');
