@@ -211,6 +211,9 @@ THE SOFTWARE.
 
       this.lazy = null;
 
+      this.windowScrollXPos_ = 0;
+      this.windowScrollYPos_ = 0;
+
       this.modalOverlay_ = document.createElement('div');
       this.modalContents_ = document.createElement('div');
       this.modalHeader_ = document.createElement('div');
@@ -271,6 +274,12 @@ THE SOFTWARE.
     show(baseTweet) {
       // console.log('show');
 
+      // 現在のスクロール位置を記録
+      const dElm = document.documentElement;
+      const dBody = document.body;
+      this.windowScrollXPos_ = dElm.scrollLeft || dBody.scrollLeft;	// 現在位置のX座標
+      this.windowScrollYPos_ = dElm.scrollTop || dBody.scrollTop;		// 現在位置のY座標
+
       this.hide();
       const ul = document.createElement('ul');
       const liFragment = document.createDocumentFragment();
@@ -288,11 +297,12 @@ THE SOFTWARE.
 
       this.modalContentsMain_.innerHTML = '';
       this.modalContentsMain_.appendChild(ul);
-      this.modalContentsMain_.scrollTop = 0;
 
       this.modalContents_.style.display = 'flex';
       this.modalOverlay_.style.display = 'block';
       this.centeringModalSyncer();
+
+      this.modalContentsMain_.scrollTop = 0;
       this.lazySet();
     }
 
@@ -306,6 +316,9 @@ THE SOFTWARE.
       this.modalContents_.style.display = 'none';
       this.modalOverlay_.style.display = 'none';
       this.lazyDestroy();
+
+      // スクロール位置を移動
+      window.scrollTo( this.windowScrollXPos_, this.windowScrollYPos_ );
     }
 
 
@@ -379,7 +392,7 @@ THE SOFTWARE.
       this.statusDiv_ = document.createElement('div');
       // ページ読み込みボタン
       this.loadBtn_ = document.createElement('button');
-      this.loadBtn_.textContent = 'まとめ読み開始';
+      this.loadBtn_.textContent = 'このページからまとめ読み開始';
       this.loadBtn_.style.width = '100%';
       this.loadBtn_.addEventListener('click', function(e) {
         // 続きを読むがあればクリック
