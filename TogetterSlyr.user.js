@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.1.0
+// @version     1.1.1
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
