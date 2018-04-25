@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.1.0
+// @version     1.2.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -41,60 +41,49 @@ THE SOFTWARE.
    */
   class TogetterUtil {
     constructor() {
-      this.maxPage_ = this.getMaxPage();
-      this.nowPage_ = this.getNowPage();
-      this.pagination_ = this.getPagination();
     }
 
 
     /**
-     * get maxPage - 最大ページ数を取得
+     * clickReadMore - 続きを読むをクリック
      *
-     * @return {number}  最大ページ数
+     * @return {void}
      */
-    get maxPage() {
-      return this.maxPage_;
+    clickReadMore() {
+      const readMore = this.getReadMore();
+      if (readMore !== null) readMore.click();
     }
 
 
     /**
-     * get nowPage - 現在のページ数を取得
+     * getReadMore - 続きを読むを取得
      *
-     * @return {number}  現在のページ数
+     * @return {Element}  続きを読む
      */
-    get nowPage() {
-      return this.nowPage_;
+    getReadMore() {
+      return document.querySelector('.more_tweet_box .btn');
     }
 
-
     /**
-     * get pagination - ページネーションを取得
-     *
-     * @return {ELement}  ページネーション
-     */
-    get pagination() {
-      return this.pagination_;
-    }
-
-
-    /**
-     * getTweetList - 表示中の全ツイートリストの取得
+     * getTweetList - 全ツイートリストの取得
      *
      * @param  {boolean} clone trueでコピーを作成
      * @param  {Element=} body 探索するElementを指定する
+     * @param  {string=} selector セレクター
      * @return {nodeList|Element[]}  cloneがfalseならnodeList、trueならElement配列
      */
-    getTweetList(clone, body) {
+    getTweetList(clone, body, selector) {
       if (typeof clone === 'undefined') clone = false;
       if (typeof body === 'undefined') body = document;
+      if (typeof selector === 'undefined') selector = '.list_box.type_tweet';
 
-      const tweets = body.querySelectorAll('.list_box.type_tweet');
+      const tweets = body.querySelectorAll(selector);
       if (clone) {
         const arr = [];
         for (let i = 0, ll = tweets.length; i !== ll; arr.push(tweets[i++].cloneNode(true)));
         return arr;
       }
-      return body.querySelectorAll('.list_box.type_tweet');
+      return tweets;
     }
 
 
@@ -121,6 +110,7 @@ THE SOFTWARE.
       // [次へ]が見つかるまで走査していけば最後のページ数が見つかる
       if (typeof body === 'undefined') body = document;
       let page = this.getPagination(body).getElementsByTagName('a')[0];
+
       while (page !== null) {
         if (page.nextElementSibling.textContent === '次へ') break;
         page = page.nextElementSibling;
@@ -156,64 +146,57 @@ THE SOFTWARE.
     /**
      * loadPages - 現在のページから全ページ読み込み
      *
-     * @param  {number=} maxPage description
-     * @param  {number=} tgtPage description
-     * @param  {string=} tgtUrl  description
-     * @return {void}         description
+     * @param  {number=} maxPage 最大何ページ読み込むか。省略すると現在ページから最後まで。
+     * @param  {string=} tgtUrl  読み込む対象URL
+     * @return {void}
      */
-    loadPages(maxPage, tgtPage, tgtUrl) {
+    loadPages(maxPage, tgtUrl) {
       const self = this;
       const xhr = new XMLHttpRequest();
-      if (typeof maxPage === 'undefined') maxPage = self.maxPage;
-      if (typeof tgtPage === 'undefined') tgtPage = self.nowPage;
+      const pagination = self.getPagination();
+      if (typeof maxPage === 'undefined') maxPage = self.getMaxPage() - self.getNowPage();
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
-            const pagination = self.pagination;
             // ページネーションの直後に追加(末尾のulに追加)
             Array.from(resTweets, (ul) => pagination.parentNode.insertBefore(ul, pagination) );
-            tgtPage++;
-            console.log('complete now=' + tgtPage + ', maxPage=' + maxPage + ' url=' + tgtUrl);
+            maxPage--;
+            // console.log('complete maxPage=' + maxPage + ' url=' + tgtUrl);
 
-            // 次ページURL取得
+            // シームレスロードのURL取得の為、maxPageがどうであれ次ページURL取得
             try {
               tgtUrl = self.getNextPageUrl(xhr.response);
-              console.log(tgtUrl);
-              pagination.setAttribute('data-nsnext', tgtUrl);
+              self.seamlessNextUrl_ = tgtUrl;
             } catch (e) {
-              console.log('error');
-              console.log(tgtUrl);
-
-              pagination.setAttribute('data-nsnext', '');
-              // self.setStatusText('次のURLの読み込み失敗(' + e.message + ')');
-              // return;
+              // [次へ]が見つからなかった時なので
+              // 最後まで読み込んだ場合もこっちに来る
+              self.seamlessNextUrl_ = '';
             }
 
-            if (tgtPage < maxPage) {
-              // 申し訳程度の負荷分散
-              // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
-              const delayMin = 1; // 秒指定
-              const delayMax = 5;
-              const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
-              setTimeout( () => self.loadPages(maxPage, tgtPage, tgtUrl), delay);
+            if (maxPage>0) {
+              self.loadPages(maxPage, tgtUrl);
             } else {
               self.addEventNinja();
-              self.setStatusText('全ページ読み込み完了');
-              console.log('loadend');
+              self.setStatusText('読み込み完了');
+              // console.log('loadend');
             }
           }
         }
         // console.log('readyState'+xhr.readyState+' status='+xhr.status);
       };
 
-      // console.log('try now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
-      self.setStatusText(tgtPage + ' ページ目読み込み中...(残り:' + (maxPage - tgtPage) + 'ページ)');
-      xhr.open('GET', tgtUrl, true);
-      xhr.responseType = 'document';
-      xhr.send();
+      if (maxPage > 0) {
+        self.setStatusText('読み込み中... 残り:'+maxPage+'ページ)');
+        xhr.open('GET', tgtUrl, true);
+        xhr.responseType = 'document';
+        xhr.send();
+      } else {
+        this.seamlessNextUrl_ = self.getNextPageUrl();
+        self.addEventNinja();
+      }
     }
   }
 
@@ -300,6 +283,7 @@ THE SOFTWARE.
 
       const ulHeader = document.createElement('ul');
       ulHeader.appendChild(baseTweet.cloneNode(true));
+      this.modalHeader_.innerHTML = '';
       this.modalHeader_.append(ulHeader);
 
       this.modalContentsMain_.innerHTML = '';
@@ -389,31 +373,43 @@ THE SOFTWARE.
 
       // リアクション表示モーダルウィンドウ
       this.reactModal_ = new ModalWindow();
+      // シームレスロードで次に読み込むURL
+      this.seamlessNextUrl_ = '';
       // ステータステキスト
       this.statusDiv_ = document.createElement('div');
-      // 全ページ読み込みボタン
+      // ページ読み込みボタン
       this.loadBtn_ = document.createElement('button');
-      this.loadBtn_.textContent = '全ページ読み';
+      this.loadBtn_.textContent = 'まとめ読み開始';
       this.loadBtn_.style.width = '100%';
       this.loadBtn_.addEventListener('click', function(e) {
+        // 続きを読むがあればクリック
+        self.clickReadMore();
         self.loadBtn_.style.display = 'none';
         document.getElementsByClassName('contents_main')[0].style.display = 'none';
-        self.loadPages(3, 2);
+        self.loadPages(0);
         document.getElementsByClassName('contents_main')[0].style.display = 'block';
       });
       document.getElementsByClassName('title_box')[0].append(this.loadBtn_);
       document.getElementsByClassName('title_box')[0].append(this.statusDiv_);
 
-      // 続きを読むがあればクリック
-      const readMore = document.querySelector('.more_tweet_box .btn');
-      if (readMore !== null) readMore.click();
-
       // シームレスロード
-
       window.onscroll = () => self.seamlessLoad();
-
     }
 
+
+    /**
+     * getNinjaTweetList - 表示中の公式ツイートリストの取得
+     *
+     * @param  {boolean} clone trueでコピーを作成
+     * @param  {Element=} body 探索するElementを指定する
+     * @return {nodeList|Element[]}  cloneがfalseならnodeList、trueならElement配列
+     */
+    getNinjaTweetList(clone, body) {
+      if (typeof clone === 'undefined') clone = false;
+      if (typeof body === 'undefined') body = document;
+      // 非表示になっていないツイートは公式のツイートとみなす
+      return this.getTweetList(clone, body, '.list_box.type_tweet:not([style*=display])');
+    }
 
     /**
      * setStatusText - ステータステキストの設定
@@ -427,22 +423,29 @@ THE SOFTWARE.
 
 
     /**
-     * addEventNinja - 公式ツイートクリック時にイベントを開く
+     * addEventNinja - 表示中の全ツイートを走査して
+     * 公式ツイート以外を非表示/公式ツイートには
+     * 反応ツイート表示イベントを設定する
      *
      * @return {void}
      */
     addEventNinja() {
       const self = this;
-      const tweetList = this.getTweetList();
+      const tweetList = this.getNinjaTweetList();
+      const NINJA_EVENT_CLASS = 'ninja_event';
+
       Array.from(tweetList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
-          // 公式ツイートクリック時に反応ツイートのモーダルを表示させる
-          const tweetBox = tweet.querySelector('.tweet_wrap');
-          tweetBox.style.cursor = 'pointer';
-          tweetBox.addEventListener('click', (e) => {
-            const baseTweet = e.target.closest('.list_box.type_tweet');
-            self.reactModal_.show(baseTweet);
-          });
+          // イベント設定済みかどうかをクラスで判断する
+          const tweetBox = tweet.querySelector('.tweet_wrap:not(.'+NINJA_EVENT_CLASS+')');
+          if (tweetBox !== null) {
+            tweetBox.style.cursor = 'pointer';
+            tweetBox.classList.add(NINJA_EVENT_CLASS);
+            tweetBox.addEventListener('click', (e) => {
+              const baseTweet = e.target.closest('.list_box.type_tweet');
+              self.reactModal_.show(baseTweet);
+            });
+          }
         } else {
           tweet.style.display = 'none';
         }
@@ -452,38 +455,29 @@ THE SOFTWARE.
 
     /**
      * seamlessLoad - Autopagerizeのように画面下まで来ると1ページロード
+     * 参考: http://cly7796.net/wp/javascript/implement-infinite-scrolling/
      * 参考: https://q-az.net/without-jquery-height-width-offset-scrolltop/
-     *
      * @return {void}
      */
     seamlessLoad() {
       const self = this;
 
-      let loadingFlag = false; // 読み込み中はtrueにして、複数回発生しないようにする
-      const pagination = self.pagination;
-      const nextPage = pagination.getAttribute('data-nsnext');
-      console.log('scroll');
-
       // 次のページ読み込み中の場合は処理を行わない
-      if (nextPage !== '') {
+      if (self.seamlessNextUrl_ !== '') {
+        const pagination = self.getPagination();
         const winHeight = window.innerHeight;
         const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
-
         const rect = pagination.getBoundingClientRect();
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const paginationTop = rect.top + scrollTop;
-
         const linkPos = paginationTop;
 
-
-        console.log(winHeight + scrollPos + '>'+ linkPos);
+        // console.log(winHeight + scrollPos + '>'+ linkPos);
 
         if (winHeight + scrollPos > linkPos) {
-          // 次のページのリンクを取得して、要素を削除しておく
-          const nextPage = pagination.getAttribute('data-nsnext');
-          pagination.setAttribute('data-nsnext', '');
-          // 次のページがある場合はリンクを追加する
-          console.log(nextPage);
+          // console.log(self.seamlessNextUrl_);
+          self.loadPages(1, self.seamlessNextUrl_);
+          self.seamlessNextUrl_ = '';
         }
       }
     }
