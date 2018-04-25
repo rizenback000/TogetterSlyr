@@ -40,7 +40,42 @@ THE SOFTWARE.
    * Togetter全般のユーティリティ
    */
   class TogetterUtil {
-    constructor() {}
+    constructor() {
+      this.maxPage_ = this.getMaxPage();
+      this.nowPage_ = this.getNowPage();
+      this.pagination_ = this.getPagination();
+    }
+
+
+    /**
+     * get maxPage - 最大ページ数を取得
+     *
+     * @return {number}  最大ページ数
+     */
+    get maxPage() {
+      return this.maxPage_;
+    }
+
+
+    /**
+     * get nowPage - 現在のページ数を取得
+     *
+     * @return {number}  現在のページ数
+     */
+    get nowPage() {
+      return this.nowPage_;
+    }
+
+
+    /**
+     * get pagination - ページネーションを取得
+     *
+     * @return {ELement}  ページネーション
+     */
+    get pagination() {
+      return this.pagination_;
+    }
+
 
     /**
      * getTweetList - 表示中の全ツイートリストの取得
@@ -64,12 +99,12 @@ THE SOFTWARE.
 
 
     /**
-     * getPageNation - ページネーション取得(下部にあるほう)
+     * getPagination - ページネーション取得(下部にあるほう)
      * 備忘:Togetterの2ページ目以降はページネーションが上にも出るが、常に下を取る
      * @param  {Element=} body 探索するElementを指定する
      * @return {Element}      ページネーション
      */
-    getPageNation(body) {
+    getPagination(body) {
       if (typeof body === 'undefined') body = document;
       return body.querySelector('.tweet_box .pagenation');
     }
@@ -85,7 +120,7 @@ THE SOFTWARE.
       // 備忘: togetterは2ページでも[次へ]があるので、ページネーションの最初から
       // [次へ]が見つかるまで走査していけば最後のページ数が見つかる
       if (typeof body === 'undefined') body = document;
-      let page = this.getPageNation(body).getElementsByTagName('a')[0];
+      let page = this.getPagination(body).getElementsByTagName('a')[0];
       while (page !== null) {
         if (page.nextElementSibling.textContent === '次へ') break;
         page = page.nextElementSibling;
@@ -102,7 +137,7 @@ THE SOFTWARE.
      */
     getNowPage(body) {
       if (typeof body === 'undefined') body = document;
-      return Number(this.getPageNation(body).querySelector('.current').textContent);
+      return Number(this.getPagination(body).querySelector('.current').textContent);
     }
 
 
@@ -114,7 +149,7 @@ THE SOFTWARE.
      */
     getNextPageUrl(body) {
       if (typeof body === 'undefined') body = document;
-      return this.getPageNation(body).querySelector('a[rel=next]').href;
+      return this.getPagination(body).querySelector('a[rel=next]').href;
     }
 
 
@@ -129,31 +164,30 @@ THE SOFTWARE.
     loadPages(maxPage, tgtPage, tgtUrl) {
       const self = this;
       const xhr = new XMLHttpRequest();
-      if (typeof maxPage === 'undefined') maxPage = self.getMaxPage();
-      if (typeof tgtPage === 'undefined') tgtPage = self.getNowPage();
+      if (typeof maxPage === 'undefined') maxPage = self.maxPage;
+      if (typeof tgtPage === 'undefined') tgtPage = self.nowPage;
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
-      let nextPageUrl = self.getNextPageUrl();
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
-            const pagenation = self.getPageNation();
+            const pagination = self.pagination;
             // ページネーションの直後に追加(末尾のulに追加)
-            Array.from(resTweets, (ul) => pagenation.parentNode.insertBefore(ul, pagenation));
+            Array.from(resTweets, (ul) => pagination.parentNode.insertBefore(ul, pagination) );
             tgtPage++;
             console.log('complete now=' + tgtPage + ', maxPage=' + maxPage + ' url=' + tgtUrl);
 
             // 次ページURL取得
             try {
-              nextPageUrl = self.getNextPageUrl(xhr.response);
-              console.log(nextPageUrl);
-              pagenation.setAttribute('data-nsnext', nextPageUrl);
+              tgtUrl = self.getNextPageUrl(xhr.response);
+              console.log(tgtUrl);
+              pagination.setAttribute('data-nsnext', tgtUrl);
             } catch (e) {
               console.log('error');
-              console.log(nextPageUrl);
+              console.log(tgtUrl);
 
-              pagenation.setAttribute('data-nsnext', '');
+              pagination.setAttribute('data-nsnext', '');
               // self.setStatusText('次のURLの読み込み失敗(' + e.message + ')');
               // return;
             }
@@ -163,8 +197,8 @@ THE SOFTWARE.
               // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
               const delayMin = 1; // 秒指定
               const delayMax = 5;
-              const delay = (Math.floor(Math.random() * (delayMax + 1 - delayMin)) + delayMin) * 1000;
-              setTimeout(() => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
+              const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
+              setTimeout( () => self.loadPages(maxPage, tgtPage, tgtUrl), delay);
             } else {
               self.addEventNinja();
               self.setStatusText('全ページ読み込み完了');
@@ -423,9 +457,11 @@ THE SOFTWARE.
      * @return {void}
      */
     seamlessLoad() {
+      const self = this;
+
       let loadingFlag = false; // 読み込み中はtrueにして、複数回発生しないようにする
-      const pagenation = this.getPageNation();
-      const nextPage = pagenation.getAttribute('data-nsnext');
+      const pagination = self.pagination;
+      const nextPage = pagination.getAttribute('data-nsnext');
       console.log('scroll');
 
       // 次のページ読み込み中の場合は処理を行わない
@@ -433,19 +469,19 @@ THE SOFTWARE.
         const winHeight = window.innerHeight;
         const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
 
-        const rect = pagenation.getBoundingClientRect();
+        const rect = pagination.getBoundingClientRect();
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const pagenationTop = rect.top + scrollTop;
+        const paginationTop = rect.top + scrollTop;
 
-        const linkPos = pagenationTop;
+        const linkPos = paginationTop;
 
 
         console.log(winHeight + scrollPos + '>'+ linkPos);
 
         if (winHeight + scrollPos > linkPos) {
           // 次のページのリンクを取得して、要素を削除しておく
-          const nextPage = pagenation.getAttribute('data-nsnext');
-          pagenation.setAttribute('data-nsnext', '');
+          const nextPage = pagination.getAttribute('data-nsnext');
+          pagination.setAttribute('data-nsnext', '');
           // 次のページがある場合はリンクを追加する
           console.log(nextPage);
         }
