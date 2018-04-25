@@ -46,17 +46,36 @@ THE SOFTWARE.
       this.pagination_ = this.getPagination();
     }
 
-    get maxPage(){
+
+    /**
+     * get maxPage - 最大ページ数を取得
+     *
+     * @return {number}  最大ページ数
+     */
+    get maxPage() {
       return this.maxPage_;
     }
 
-    get nowPage(){
+
+    /**
+     * get nowPage - 現在のページ数を取得
+     *
+     * @return {number}  現在のページ数
+     */
+    get nowPage() {
       return this.nowPage_;
     }
 
-    get pagination(){
+
+    /**
+     * get pagination - ページネーションを取得
+     *
+     * @return {ELement}  ページネーション
+     */
+    get pagination() {
       return this.pagination_;
     }
+
 
     /**
      * getTweetList - 表示中の全ツイートリストの取得
@@ -172,7 +191,7 @@ THE SOFTWARE.
               }
               // 申し訳程度の負荷分散
               // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
-              const delayMin = 1; //秒指定
+              const delayMin = 1; // 秒指定
               const delayMax = 5;
               const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
               setTimeout( () => self.loadPages(maxPage, tgtPage, nextPageUrl), delay);
@@ -317,8 +336,6 @@ THE SOFTWARE.
 
       this.modalContents_.style.left = pxleft + 'px';
       this.modalContents_.style.top = pxtop + 'px';
-
-
     }
 
 
