@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.1.1
+// @version     1.2.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -41,60 +41,49 @@ THE SOFTWARE.
    */
   class TogetterUtil {
     constructor() {
-      this.maxPage_ = this.getMaxPage();
-      this.nowPage_ = this.getNowPage();
-      this.pagination_ = this.getPagination();
     }
 
 
     /**
-     * get maxPage - 最大ページ数を取得
+     * clickReadMore - 続きを読むをクリック
      *
-     * @return {number}  最大ページ数
+     * @return {void}
      */
-    get maxPage() {
-      return this.maxPage_;
+    clickReadMore() {
+      const readMore = this.getReadMore();
+      if (readMore !== null) readMore.click();
     }
 
 
     /**
-     * get nowPage - 現在のページ数を取得
+     * getReadMore - 続きを読むを取得
      *
-     * @return {number}  現在のページ数
+     * @return {Element}  続きを読む
      */
-    get nowPage() {
-      return this.nowPage_;
+    getReadMore() {
+      return document.querySelector('.more_tweet_box .btn');
     }
 
-
     /**
-     * get pagination - ページネーションを取得
-     *
-     * @return {ELement}  ページネーション
-     */
-    get pagination() {
-      return this.pagination_;
-    }
-
-
-    /**
-     * getTweetList - 表示中の全ツイートリストの取得
+     * getTweetList - 全ツイートリストの取得
      *
      * @param  {boolean} clone trueでコピーを作成
      * @param  {Element=} body 探索するElementを指定する
+     * @param  {string=} selector セレクター
      * @return {nodeList|Element[]}  cloneがfalseならnodeList、trueならElement配列
      */
-    getTweetList(clone, body) {
+    getTweetList(clone, body, selector) {
       if (typeof clone === 'undefined') clone = false;
       if (typeof body === 'undefined') body = document;
+      if (typeof selector === 'undefined') selector = '.list_box.type_tweet';
 
-      const tweets = body.querySelectorAll('.list_box.type_tweet');
+      const tweets = body.querySelectorAll(selector);
       if (clone) {
         const arr = [];
         for (let i = 0, ll = tweets.length; i !== ll; arr.push(tweets[i++].cloneNode(true)));
         return arr;
       }
-      return body.querySelectorAll('.list_box.type_tweet');
+      return tweets;
     }
 
 
@@ -121,6 +110,7 @@ THE SOFTWARE.
       // [次へ]が見つかるまで走査していけば最後のページ数が見つかる
       if (typeof body === 'undefined') body = document;
       let page = this.getPagination(body).getElementsByTagName('a')[0];
+
       while (page !== null) {
         if (page.nextElementSibling.textContent === '次へ') break;
         page = page.nextElementSibling;
@@ -156,56 +146,57 @@ THE SOFTWARE.
     /**
      * loadPages - 現在のページから全ページ読み込み
      *
-     * @param  {number=} maxPage description
-     * @param  {string=} tgtUrl  description
-     * @return {void}         description
+     * @param  {number=} maxPage 最大何ページ読み込むか。省略すると現在ページから最後まで。
+     * @param  {string=} tgtUrl  読み込む対象URL
+     * @return {void}
      */
     loadPages(maxPage, tgtUrl) {
       const self = this;
       const xhr = new XMLHttpRequest();
-      if (typeof maxPage === 'undefined') maxPage = self.maxPage - self.nowPage;
+      const pagination = self.getPagination();
+      if (typeof maxPage === 'undefined') maxPage = self.getMaxPage() - self.getNowPage();
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
-            const pagination = self.pagination;
             // ページネーションの直後に追加(末尾のulに追加)
-            Array.from(resTweets, (ul) => {
-              pagination.parentNode.insertBefore(ul, pagination);
-            });
+            Array.from(resTweets, (ul) => pagination.parentNode.insertBefore(ul, pagination) );
             maxPage--;
-            console.log('complete maxPage='+maxPage+' url='+tgtUrl);
+            // console.log('complete maxPage=' + maxPage + ' url=' + tgtUrl);
 
-            if (maxPage) {
-              // 次ページURL取得
-              try {
-                tgtUrl = self.getNextPageUrl(xhr.response);
-              } catch (e) {
-                self.setStatusText('次のURLの読み込み失敗('+e.message+')');
-                return;
-                // 申し訳程度の負荷分散
-              }
-              // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
-              const delayMin = 1; // 秒指定
-              const delayMax = 5;
-              const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
-              setTimeout( () => self.loadPages(maxPage, tgtUrl), delay);
+            // シームレスロードのURL取得の為、maxPageがどうであれ次ページURL取得
+            try {
+              tgtUrl = self.getNextPageUrl(xhr.response);
+              self.seamlessNextUrl_ = tgtUrl;
+            } catch (e) {
+              // [次へ]が見つからなかった時なので
+              // 最後まで読み込んだ場合もこっちに来る
+              self.seamlessNextUrl_ = '';
+            }
+
+            if (maxPage>0) {
+              self.loadPages(maxPage, tgtUrl);
             } else {
               self.addEventNinja();
-              self.setStatusText('全ページ読み込み完了');
-              console.log('loadend');
+              self.setStatusText('読み込み完了');
+              // console.log('loadend');
             }
           }
         }
         // console.log('readyState'+xhr.readyState+' status='+xhr.status);
       };
 
-      self.setStatusText('読み込み中... 残り:'+maxPage+'ページ)');
-      xhr.open('GET', tgtUrl, true);
-      xhr.responseType = 'document';
-      xhr.send();
+      if (maxPage > 0) {
+        self.setStatusText('読み込み中... 残り:'+maxPage+'ページ)');
+        xhr.open('GET', tgtUrl, true);
+        xhr.responseType = 'document';
+        xhr.send();
+      } else {
+        this.seamlessNextUrl_ = self.getNextPageUrl();
+        self.addEventNinja();
+      }
     }
   }
 
@@ -219,6 +210,9 @@ THE SOFTWARE.
       const self = this;
 
       this.lazy = null;
+
+      this.windowScrollXPos_ = 0;
+      this.windowScrollYPos_ = 0;
 
       this.modalOverlay_ = document.createElement('div');
       this.modalContents_ = document.createElement('div');
@@ -266,7 +260,7 @@ THE SOFTWARE.
       let queue = null;
       window.addEventListener('resize', function() {
         clearTimeout(queue);
-        queue = setTimeout( ()=> self.centeringModalSyncer(), 300);
+        queue = setTimeout(() => self.centeringModalSyncer(), 300);
       });
     }
 
@@ -279,6 +273,12 @@ THE SOFTWARE.
      */
     show(baseTweet) {
       // console.log('show');
+
+      // 現在のスクロール位置を記録
+      const dElm = document.documentElement;
+      const dBody = document.body;
+      this.windowScrollXPos_ = dElm.scrollLeft || dBody.scrollLeft;	// 現在位置のX座標
+      this.windowScrollYPos_ = dElm.scrollTop || dBody.scrollTop;		// 現在位置のY座標
 
       this.hide();
       const ul = document.createElement('ul');
@@ -297,11 +297,12 @@ THE SOFTWARE.
 
       this.modalContentsMain_.innerHTML = '';
       this.modalContentsMain_.appendChild(ul);
-      this.modalContentsMain_.scrollTop = 0;
 
       this.modalContents_.style.display = 'flex';
       this.modalOverlay_.style.display = 'block';
       this.centeringModalSyncer();
+
+      this.modalContentsMain_.scrollTop = 0;
       this.lazySet();
     }
 
@@ -315,6 +316,9 @@ THE SOFTWARE.
       this.modalContents_.style.display = 'none';
       this.modalOverlay_.style.display = 'none';
       this.lazyDestroy();
+
+      // スクロール位置を移動
+      window.scrollTo( this.windowScrollXPos_, this.windowScrollYPos_ );
     }
 
 
@@ -362,7 +366,7 @@ THE SOFTWARE.
     lazyDestroy() {
       // console.log('lazyDestroy');
       // 本当に効いてるかどうかわからんけどやらんよりマシ？
-      if ( this.lazy !== null) this.lazy.destroy();
+      if (this.lazy !== null) this.lazy.destroy();
     }
   }
 
@@ -377,31 +381,48 @@ THE SOFTWARE.
 
       // 実況まとめなのかを判断する
       const tweets = this.getTweetList();
-      const nijaSoul = [].slice.call(tweets).some((tweet)=>NinjaManager.isNinja(tweet));
+      const nijaSoul = [].slice.call(tweets).some((tweet) => NinjaManager.isNinja(tweet));
       if (nijaSoul === false) return;
 
       // リアクション表示モーダルウィンドウ
       this.reactModal_ = new ModalWindow();
+      // シームレスロードで次に読み込むURL
+      this.seamlessNextUrl_ = '';
       // ステータステキスト
       this.statusDiv_ = document.createElement('div');
-      // 全ページ読み込みボタン
+      // ページ読み込みボタン
       this.loadBtn_ = document.createElement('button');
-      this.loadBtn_.textContent = '全ページ読み';
+      this.loadBtn_.textContent = 'このページからまとめ読み開始';
       this.loadBtn_.style.width = '100%';
       this.loadBtn_.addEventListener('click', function(e) {
+        // 続きを読むがあればクリック
+        self.clickReadMore();
         self.loadBtn_.style.display = 'none';
         document.getElementsByClassName('contents_main')[0].style.display = 'none';
-        self.loadPages();
+        self.loadPages(0);
         document.getElementsByClassName('contents_main')[0].style.display = 'block';
       });
       document.getElementsByClassName('title_box')[0].append(this.loadBtn_);
       document.getElementsByClassName('title_box')[0].append(this.statusDiv_);
 
-      // 続きを読むがあればクリック
-      const readMore = document.querySelector('.more_tweet_box .btn');
-      if (readMore !== null) readMore.click();
+      // シームレスロード
+      window.onscroll = () => self.seamlessLoad();
     }
 
+
+    /**
+     * getNinjaTweetList - 表示中の公式ツイートリストの取得
+     *
+     * @param  {boolean} clone trueでコピーを作成
+     * @param  {Element=} body 探索するElementを指定する
+     * @return {nodeList|Element[]}  cloneがfalseならnodeList、trueならElement配列
+     */
+    getNinjaTweetList(clone, body) {
+      if (typeof clone === 'undefined') clone = false;
+      if (typeof body === 'undefined') body = document;
+      // 非表示になっていないツイートは公式のツイートとみなす
+      return this.getTweetList(clone, body, '.list_box.type_tweet:not([style*=display])');
+    }
 
     /**
      * setStatusText - ステータステキストの設定
@@ -415,26 +436,63 @@ THE SOFTWARE.
 
 
     /**
-     * addEventNinja - 公式ツイートクリック時にイベントを開く
+     * addEventNinja - 表示中の全ツイートを走査して
+     * 公式ツイート以外を非表示/公式ツイートには
+     * 反応ツイート表示イベントを設定する
      *
      * @return {void}
      */
     addEventNinja() {
       const self = this;
-      const tweetList = this.getTweetList();
+      const tweetList = this.getNinjaTweetList();
+      const NINJA_EVENT_CLASS = 'ninja_event';
+
       Array.from(tweetList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
-          // 公式ツイートクリック時に反応ツイートのモーダルを表示させる
-          const tweetBox = tweet.querySelector('.tweet_wrap');
-          tweetBox.style.cursor = 'pointer';
-          tweetBox.addEventListener('click', (e) => {
-            const baseTweet = e.target.closest('.list_box.type_tweet');
-            self.reactModal_.show(baseTweet);
-          });
+          // イベント設定済みかどうかをクラスで判断する
+          const tweetBox = tweet.querySelector('.tweet_wrap:not(.'+NINJA_EVENT_CLASS+')');
+          if (tweetBox !== null) {
+            tweetBox.style.cursor = 'pointer';
+            tweetBox.classList.add(NINJA_EVENT_CLASS);
+            tweetBox.addEventListener('click', (e) => {
+              const baseTweet = e.target.closest('.list_box.type_tweet');
+              self.reactModal_.show(baseTweet);
+            });
+          }
         } else {
           tweet.style.display = 'none';
         }
       });
+    }
+
+
+    /**
+     * seamlessLoad - Autopagerizeのように画面下まで来ると1ページロード
+     * 参考: http://cly7796.net/wp/javascript/implement-infinite-scrolling/
+     * 参考: https://q-az.net/without-jquery-height-width-offset-scrolltop/
+     * @return {void}
+     */
+    seamlessLoad() {
+      const self = this;
+
+      // 次のページ読み込み中の場合は処理を行わない
+      if (self.seamlessNextUrl_ !== '') {
+        const pagination = self.getPagination();
+        const winHeight = window.innerHeight;
+        const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
+        const rect = pagination.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const paginationTop = rect.top + scrollTop;
+        const linkPos = paginationTop;
+
+        // console.log(winHeight + scrollPos + '>'+ linkPos);
+
+        if (winHeight + scrollPos > linkPos) {
+          // console.log(self.seamlessNextUrl_);
+          self.loadPages(1, self.seamlessNextUrl_);
+          self.seamlessNextUrl_ = '';
+        }
+      }
     }
 
 
@@ -450,7 +508,7 @@ THE SOFTWARE.
       let nextTweet = officialTweet.nextElementSibling;
       while (nextTweet !== null) {
         // 次の公式ツイートが出てきたら停止
-        if ( NinjaManager.isNinja(nextTweet) ) break;
+        if (NinjaManager.isNinja(nextTweet)) break;
         const cloneTweet = nextTweet.cloneNode(true);
         cloneTweet.style.display = 'block';
         reactTweets.push(cloneTweet);
