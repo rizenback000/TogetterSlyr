@@ -292,6 +292,7 @@ THE SOFTWARE.
 
       const ulHeader = document.createElement('ul');
       ulHeader.appendChild(baseTweet.cloneNode(true));
+      this.modalHeader_.innerHTML = '';
       this.modalHeader_.append(ulHeader);
 
       this.modalContentsMain_.innerHTML = '';
