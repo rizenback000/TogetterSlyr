@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.0.0
+// @version     1.1.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -189,38 +189,48 @@ THE SOFTWARE.
 
       this.lazy = null;
 
-      this.$modalContent_ = document.createElement('div');
-      this.$modalOverlay_ = document.createElement('div');
+      this.modalOverlay_ = document.createElement('div');
+      this.modalContents_ = document.createElement('div');
+      this.modalHeader_ = document.createElement('div');
+      this.modalContentsMain_ = document.createElement('div');
 
-      this.$modalContent_.id = 'modalContent';
-      this.$modalOverlay_.id = 'modelOverlay';
+      this.modalContents_.id = 'modalContent';
+      this.modalHeader_.id = 'modalHeader';
+      this.modalContentsMain_.id = 'modalContentsMain';
+      this.modalOverlay_.id = 'modelOverlay';
 
-      this.$modalContent_.style.width = '50%';
-      this.$modalContent_.style.height = '80%';
-      this.$modalContent_.style.margin = '1.5em auto 0';
-      this.$modalContent_.style.padding = '10px 20px';
-      this.$modalContent_.style.border = '2px solid #aaa';
-      this.$modalContent_.style.zIndex = '2';
-      this.$modalContent_.style.position = 'fixed';
-      this.$modalContent_.style.overflowY = 'auto';
-      this.$modalContent_.style.backgroundColor = '#fff';
-      this.$modalContent_.style.display = 'none';
+      this.modalContents_.style.width = '50%';
+      this.modalContents_.style.height = '80%';
+      this.modalContents_.style.margin = '1.5em auto 0';
+      this.modalContents_.style.padding = '10px 20px';
+      this.modalContents_.style.border = '2px solid #aaa';
+      this.modalContents_.style.zIndex = '2';
+      this.modalContents_.style.position = 'fixed';
+      this.modalContents_.style.backgroundColor = '#fff';
+      this.modalContents_.style.overflow = 'hidden';
+      this.modalContents_.style.display = 'none';
+      this.modalContents_.style.flexDirection = 'column';
 
-      this.$modalOverlay_.style.zIndex = '2';
-      this.$modalOverlay_.style.display = 'none';
-      this.$modalOverlay_.style.position = 'fixed';
-      this.$modalOverlay_.style.top = '0';
-      this.$modalOverlay_.style.left = '0';
-      this.$modalOverlay_.style.width = '100%';
-      this.$modalOverlay_.style.height = '120%';
-      this.$modalOverlay_.style.backgroundColor = 'rgba(0,0,0,0.750)';
+      this.modalHeader_.style.borderBottom = '1px solid #aaa';
+      this.modalContentsMain_.style.overflowY = 'auto';
 
-      this.$modalOverlay_.addEventListener('click', function(e) {
+      this.modalOverlay_.style.zIndex = '2';
+      this.modalOverlay_.style.display = 'none';
+      this.modalOverlay_.style.position = 'fixed';
+      this.modalOverlay_.style.top = '0';
+      this.modalOverlay_.style.left = '0';
+      this.modalOverlay_.style.width = '100%';
+      this.modalOverlay_.style.height = '120%';
+      this.modalOverlay_.style.backgroundColor = 'rgba(0,0,0,0.750)';
+
+      this.modalOverlay_.addEventListener('click', function(e) {
         self.hide();
       });
 
-      document.body.appendChild(this.$modalOverlay_);
-      document.body.appendChild(this.$modalContent_);
+      document.body.appendChild(this.modalOverlay_);
+      document.body.appendChild(this.modalContents_);
+      this.modalContents_.appendChild(this.modalHeader_);
+      this.modalContents_.appendChild(this.modalContentsMain_);
 
       let queue = null;
       window.addEventListener('resize', function() {
@@ -249,11 +259,16 @@ THE SOFTWARE.
       });
       ul.appendChild(liFragment);
 
-      this.$modalContent_.innerHTML = '';
-      this.$modalContent_.appendChild(ul);
-      this.$modalContent_.style.display = 'block';
-      this.$modalOverlay_.style.display = 'block';
-      this.$modalContent_.scrollTop = 0;
+      const ulHeader = document.createElement('ul');
+      ulHeader.appendChild(baseTweet.cloneNode(true));
+      this.modalHeader_.append(ulHeader);
+
+      this.modalContentsMain_.innerHTML = '';
+      this.modalContentsMain_.appendChild(ul);
+      this.modalContentsMain_.scrollTop = 0;
+
+      this.modalContents_.style.display = 'flex';
+      this.modalOverlay_.style.display = 'block';
       this.centeringModalSyncer();
       this.lazySet();
     }
@@ -265,8 +280,8 @@ THE SOFTWARE.
      * @return {void}
      */
     hide() {
-      this.$modalContent_.style.display = 'none';
-      this.$modalOverlay_.style.display = 'none';
+      this.modalContents_.style.display = 'none';
+      this.modalOverlay_.style.display = 'none';
       this.lazyDestroy();
     }
 
@@ -279,13 +294,15 @@ THE SOFTWARE.
     centeringModalSyncer() {
       const w = window.document.documentElement.clientWidth;
       const h = window.document.documentElement.clientHeight;
-      const cw = this.$modalContent_.offsetWidth;
-      const ch = this.$modalContent_.offsetHeight;
+      const cw = this.modalContents_.offsetWidth;
+      const ch = this.modalContents_.offsetHeight;
       const pxleft = ((w - cw) / 2);
       const pxtop = ((h - ch) / 2);
 
-      this.$modalContent_.style.left = pxleft + 'px';
-      this.$modalContent_.style.top = pxtop + 'px';
+      this.modalContents_.style.left = pxleft + 'px';
+      this.modalContents_.style.top = pxtop + 'px';
+
+
     }
 
 
