@@ -64,12 +64,12 @@ THE SOFTWARE.
 
 
     /**
-     * getPageNation - ページネーション取得(下部にあるほう)
+     * getPagination - ページネーション取得(下部にあるほう)
      * 備忘:Togetterの2ページ目以降はページネーションが上にも出るが、常に下を取る
      * @param  {Element=} body 探索するElementを指定する
      * @return {Element}      ページネーション
      */
-    getPageNation(body) {
+    getPagination(body) {
       if (typeof body === 'undefined') body = document;
       return body.querySelector('.tweet_box .pagenation');
     }
@@ -85,7 +85,7 @@ THE SOFTWARE.
       // 備忘: togetterは2ページでも[次へ]があるので、ページネーションの最初から
       // [次へ]が見つかるまで走査していけば最後のページ数が見つかる
       if (typeof body === 'undefined') body = document;
-      let page = this.getPageNation(body).getElementsByTagName('a')[0];
+      let page = this.getPagination(body).getElementsByTagName('a')[0];
       while (page !== null) {
         if (page.nextElementSibling.textContent === '次へ') break;
         page = page.nextElementSibling;
@@ -102,7 +102,7 @@ THE SOFTWARE.
      */
     getNowPage(body) {
       if (typeof body === 'undefined') body = document;
-      return Number(this.getPageNation(body).querySelector('.current').textContent);
+      return Number(this.getPagination(body).querySelector('.current').textContent);
     }
 
 
@@ -114,7 +114,7 @@ THE SOFTWARE.
      */
     getNextPageUrl(body) {
       if (typeof body === 'undefined') body = document;
-      return this.getPageNation(body).querySelector('a[rel=next]').href;
+      return this.getPagination(body).querySelector('a[rel=next]').href;
     }
 
 
@@ -138,10 +138,10 @@ THE SOFTWARE.
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
-            const pagenation = self.getPageNation();
+            const pagination = self.getPagination();
             // ページネーションの直後に追加(末尾のulに追加)
             Array.from(resTweets, (ul) => {
-              pagenation.parentNode.insertBefore(ul, pagenation);
+              pagination.parentNode.insertBefore(ul, pagination);
             });
             tgtPage++;
             console.log('complete now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
