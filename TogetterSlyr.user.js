@@ -40,7 +40,23 @@ THE SOFTWARE.
    * Togetter全般のユーティリティ
    */
   class TogetterUtil {
-    constructor() {}
+    constructor() {
+      this.maxPage_ = this.getMaxPage();
+      this.nowPage_ = this.getNowPage();
+      this.pagination_ = this.getPagination();
+    }
+
+    get maxPage(){
+      return this.maxPage_;
+    }
+
+    get nowPage(){
+      return this.nowPage_;
+    }
+
+    get pagination(){
+      return this.pagination_;
+    }
 
     /**
      * getTweetList - 表示中の全ツイートリストの取得
@@ -129,8 +145,8 @@ THE SOFTWARE.
     loadPages(maxPage, tgtPage, tgtUrl) {
       const self = this;
       const xhr = new XMLHttpRequest();
-      if (typeof maxPage === 'undefined') maxPage = self.getMaxPage();
-      if (typeof tgtPage === 'undefined') tgtPage = self.getNowPage();
+      if (typeof maxPage === 'undefined') maxPage = self.maxPage;
+      if (typeof tgtPage === 'undefined') tgtPage = self.nowPage;
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
       let nextPageUrl = self.getNextPageUrl();
@@ -138,7 +154,7 @@ THE SOFTWARE.
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
-            const pagination = self.getPagination();
+            const pagination = self.pagination;
             // ページネーションの直後に追加(末尾のulに追加)
             Array.from(resTweets, (ul) => {
               pagination.parentNode.insertBefore(ul, pagination);
