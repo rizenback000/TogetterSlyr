@@ -157,15 +157,13 @@ THE SOFTWARE.
      * loadPages - 現在のページから全ページ読み込み
      *
      * @param  {number=} maxPage description
-     * @param  {number=} tgtPage description
      * @param  {string=} tgtUrl  description
      * @return {void}         description
      */
-    loadPages(maxPage, tgtPage, tgtUrl) {
+    loadPages(maxPage, tgtUrl) {
       const self = this;
       const xhr = new XMLHttpRequest();
-      if (typeof maxPage === 'undefined') maxPage = self.maxPage;
-      if (typeof tgtPage === 'undefined') tgtPage = self.nowPage;
+      if (typeof maxPage === 'undefined') maxPage = self.maxPage - self.nowPage;
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
       xhr.onreadystatechange = function() {
@@ -177,23 +175,23 @@ THE SOFTWARE.
             Array.from(resTweets, (ul) => {
               pagination.parentNode.insertBefore(ul, pagination);
             });
-            tgtPage++;
-            console.log('complete now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
+            maxPage--;
+            console.log('complete maxPage='+maxPage+' url='+tgtUrl);
 
-            if (tgtPage < maxPage) {
+            if (maxPage) {
               // 次ページURL取得
               try {
                 tgtUrl = self.getNextPageUrl(xhr.response);
               } catch (e) {
                 self.setStatusText('次のURLの読み込み失敗('+e.message+')');
                 return;
+                // 申し訳程度の負荷分散
               }
-              // 申し訳程度の負荷分散
               // できればautopagerizeのようにしたいけどアイディアが無いのでとりあえず全読み込み
               const delayMin = 1; // 秒指定
               const delayMax = 5;
               const delay = (Math.floor( Math.random() * (delayMax + 1 - delayMin) ) + delayMin) * 1000;
-              setTimeout( () => self.loadPages(maxPage, tgtPage, tgtUrl), delay);
+              setTimeout( () => self.loadPages(maxPage, tgtUrl), delay);
             } else {
               self.addEventNinja();
               self.setStatusText('全ページ読み込み完了');
@@ -204,8 +202,7 @@ THE SOFTWARE.
         // console.log('readyState'+xhr.readyState+' status='+xhr.status);
       };
 
-      // console.log('try now='+tgtPage+', maxPage='+maxPage+' url='+tgtUrl);
-      self.setStatusText(tgtPage+' ページ目読み込み中...(残り:'+(maxPage-tgtPage)+'ページ)');
+      self.setStatusText('読み込み中... 残り:'+maxPage+'ページ)');
       xhr.open('GET', tgtUrl, true);
       xhr.responseType = 'document';
       xhr.send();
