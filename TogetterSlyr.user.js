@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.2.0
+// @version     1.3.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -40,9 +40,7 @@ THE SOFTWARE.
    * Togetter全般のユーティリティ
    */
   class TogetterUtil {
-    constructor() {
-    }
-
+    constructor() {}
 
     /**
      * clickReadMore - 続きを読むをクリック
@@ -162,7 +160,7 @@ THE SOFTWARE.
           if (xhr.status === 200) {
             const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
             // ページネーションの直後に追加(末尾のulに追加)
-            Array.from(resTweets, (ul) => pagination.parentNode.insertBefore(ul, pagination) );
+            Array.from(resTweets, (ul) => pagination.parentNode.insertBefore(ul, pagination));
             maxPage--;
             // console.log('complete maxPage=' + maxPage + ' url=' + tgtUrl);
 
@@ -176,8 +174,12 @@ THE SOFTWARE.
               self.seamlessNextUrl_ = '';
             }
 
-            if (maxPage>0) {
-              self.loadPages(maxPage, tgtUrl);
+            if (maxPage > 0) {
+              // 複数ページ読む時は気持ち負荷分散(0.5～2秒)
+              const max = 2000;
+              const min = 500;
+              const delay = Math.floor( Math.random() * (max + 1 - min) ) + min;
+              setTimeout( () => self.loadPages(maxPage, tgtUrl), delay);
             } else {
               self.addEventNinja();
               self.setStatusText('読み込み完了');
@@ -189,7 +191,7 @@ THE SOFTWARE.
       };
 
       if (maxPage > 0) {
-        self.setStatusText('読み込み中... 残り:'+maxPage+'ページ)');
+        self.setStatusText('読み込み中... 残り:' + maxPage + 'ページ)');
         xhr.open('GET', tgtUrl, true);
         xhr.responseType = 'document';
         xhr.send();
@@ -277,8 +279,8 @@ THE SOFTWARE.
       // 現在のスクロール位置を記録
       const dElm = document.documentElement;
       const dBody = document.body;
-      this.windowScrollXPos_ = dElm.scrollLeft || dBody.scrollLeft;	// 現在位置のX座標
-      this.windowScrollYPos_ = dElm.scrollTop || dBody.scrollTop;		// 現在位置のY座標
+      this.windowScrollXPos_ = dElm.scrollLeft || dBody.scrollLeft; // 現在位置のX座標
+      this.windowScrollYPos_ = dElm.scrollTop || dBody.scrollTop; // 現在位置のY座標
 
       this.hide();
       const ul = document.createElement('ul');
@@ -318,7 +320,7 @@ THE SOFTWARE.
       this.lazyDestroy();
 
       // スクロール位置を移動
-      window.scrollTo( this.windowScrollXPos_, this.windowScrollYPos_ );
+      window.scrollTo(this.windowScrollXPos_, this.windowScrollYPos_);
     }
 
 
@@ -450,7 +452,7 @@ THE SOFTWARE.
       Array.from(tweetList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
           // イベント設定済みかどうかをクラスで判断する
-          const tweetBox = tweet.querySelector('.tweet_wrap:not(.'+NINJA_EVENT_CLASS+')');
+          const tweetBox = tweet.querySelector('.tweet_wrap:not(.' + NINJA_EVENT_CLASS + ')');
           if (tweetBox !== null) {
             tweetBox.style.cursor = 'pointer';
             tweetBox.classList.add(NINJA_EVENT_CLASS);
