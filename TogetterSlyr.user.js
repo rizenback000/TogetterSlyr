@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.3.1
+// @version     1.4.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -63,20 +63,20 @@
     }
 
     /**
-     * getTweetList - 全ツイートリストの取得
+     * gettwList - 全ツイートリストの取得
      *
      * @param  {boolean} clone trueでコピーを作成
      * @param  {Element=} body 探索するElementを指定する
      * @param  {string=} selector セレクター
      * @return {nodeList|Element[]}  cloneがfalseならnodeList、trueならElement配列
      */
-    getTweetList(clone, body, selector) {
+    gettwList(clone, body, selector) {
       if (typeof clone === 'undefined') clone = false;
       if (typeof body === 'undefined') body = document;
       if (typeof selector === 'undefined') selector = '.list_box.type_tweet';
 
       const tweets = body.querySelectorAll(selector);
-      // console.log('getTweetList = '+selector);
+      // console.log('gettwList = '+selector);
       // console.log(tweets);
       if (clone) {
         const arr = [];
@@ -172,7 +172,7 @@
     getUserIconList(clone, filter) {
       if (typeof clone === 'undefined') clone = false;
       if (typeof filter === 'undefined') filter = '';
-      return this.getTweetList(clone, document, '.user_link img' + filter);
+      return this.gettwList(clone, document, '.user_link img' + filter);
     }
 
 
@@ -193,17 +193,19 @@
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
-            const resTweets = xhr.response.querySelectorAll('.tweet_box ul');
+            const resTweets = xhr.response.querySelectorAll('.tweet_box[itemprop=articleBody]');
             const resPage = self.getNowPage(xhr.response);
 
-            Array.from(resTweets, (ul) => {
-              const liList = ul.querySelectorAll('li');
-              Array.from(liList, (li) => {
-                li.dataset.acqpage = resPage;
-                li.dataset.acqurl = xhr.response.URL;
+            Array.from(resTweets, (twBox) => {
+              const twList = twBox.querySelectorAll('.list_box.type_tweet');
+              const twFragment = document.createDocumentFragment();
+              Array.from(twList, (tweet) => {
+                tweet.dataset.acqpage = resPage;
+                tweet.dataset.acqurl = xhr.response.URL;
+                twFragment.appendChild(tweet);
               });
-              // ページネーションの直後に追加(末尾のulに追加)
-              pagination.parentNode.insertBefore(ul, pagination);
+              // ページネーションの直後に追加(twBoxの末尾に追加)
+              pagination.parentNode.insertBefore(twFragment, pagination);
             });
             maxPage--;
             // console.log('complete maxPage=' + maxPage + ' url=' + tgtUrl);
@@ -226,7 +228,11 @@
               setTimeout(() => self.loadPages(maxPage, tgtUrl), delay);
             } else {
               self.addEventNinja();
-              self.setStatusText('読み込み完了');
+              if( self.getMaxPage() <= resPage ){
+                self.setStatusText('全てのページ読み込みを完了しました');
+              }else{
+                self.setStatusText(resPage+'まで読み込み完了');
+              }
             }
           }
         }
@@ -327,17 +333,17 @@
       this.windowScrollYPos_ = dElm.scrollTop || dBody.scrollTop; // 現在位置のY座標
 
       this.hide();
-      const ul = document.createElement('ul');
-      const liFragment = document.createDocumentFragment();
+      const twBox = document.createElement('div');
+      const twFragment = document.createDocumentFragment();
       const tweetsArr = NinjaManager.getReactTweets(baseTweet);
 
       tweetsArr.forEach(function(item) {
-        liFragment.appendChild(item);
+        twFragment.appendChild(item);
       });
-      ul.appendChild(liFragment);
+      twBox.appendChild(twFragment);
 
-      const ulHeader = document.createElement('ul');
-      ulHeader.appendChild(baseTweet.cloneNode(true));
+      const divHeader = document.createElement('div');
+      divHeader.appendChild(baseTweet.cloneNode(true));
       this.modalHeader_.innerHTML = '';
       if (typeof baseTweet.dataset.acqpage !== 'undefined') {
         const dispPage = document.createElement('p');
@@ -350,10 +356,10 @@
         dispPage.appendChild(a);
         this.modalHeader_.appendChild(dispPage);
       }
-      this.modalHeader_.append(ulHeader);
+      this.modalHeader_.append(divHeader);
 
       this.modalContentsMain_.innerHTML = '';
-      this.modalContentsMain_.appendChild(ul);
+      this.modalContentsMain_.appendChild(twBox);
 
       this.modalContents_.style.display = 'flex';
       this.modalOverlay_.style.display = 'block';
@@ -437,7 +443,7 @@
       const self = this;
 
       // 実況まとめなのかを判断する
-      const tweets = this.getTweetList();
+      const tweets = this.gettwList();
       const nijaSoul = [].slice.call(tweets).some((tweet) => NinjaManager.isNinja(tweet));
       if (nijaSoul === false) return;
 
@@ -458,6 +464,7 @@
         document.getElementsByClassName('contents_main')[0].style.display = 'none';
         self.loadPages(0);
         document.getElementsByClassName('contents_main')[0].style.display = 'block';
+        self.setStatusText('スクロールしていくと自動的に次のページを読み込みます(AutoPagerizeのようなアドオンなどは無効にしてください)');
       });
       document.getElementsByClassName('title_box')[0].append(this.loadBtn_);
       document.getElementsByClassName('title_box')[0].append(this.statusDiv_);
@@ -468,17 +475,17 @@
 
 
     /**
-     * getNinjaTweetList - 表示中の公式ツイートリストの取得
+     * getNinjatwList - 表示中の公式ツイートリストの取得
      *
      * @param  {boolean} clone trueでコピーを作成
      * @param  {Element=} body 探索するElementを指定する
      * @return {nodeList|Element[]}  cloneがfalseならnodeList、trueならElement配列
      */
-    getNinjaTweetList(clone, body) {
+    getNinjatwList(clone, body) {
       if (typeof clone === 'undefined') clone = false;
       if (typeof body === 'undefined') body = document;
       // 非表示になっていないツイートは公式のツイートとみなす
-      return this.getTweetList(clone, body, '.list_box.type_tweet:not([style*=display])');
+      return this.gettwList(clone, body, '.list_box.type_tweet:not([style*=display])');
     }
 
     /**
@@ -500,22 +507,22 @@
      */
     addEventNinja() {
       const self = this;
-      const tweetList = this.getNinjaTweetList();
+      const twList = this.getNinjatwList();
       const NS_EVENT_CONFIGED_CLASS = '.ns_event_configured';
 
-      Array.from(tweetList, (tweet, i) => {
+      Array.from(twList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
           // イベント設定済みかどうかをクラスで判断する
-          const tweetBox = tweet.querySelector('.tweet_wrap:not(' + NS_EVENT_CONFIGED_CLASS + ')');
-          if (tweetBox !== null) {
+          const twBox = tweet.querySelector('.tweet_wrap:not(' + NS_EVENT_CONFIGED_CLASS + ')');
+          if (twBox !== null) {
             // Togetter公式のLazyLoadエラー.error(ページ閲覧時に表示されたもの)未設定かつ、
             // 独自onerror未設定の公式ツイートのアイコン画像はキャッシュに残ってるはずなので
             // LazyLoadではなくsrcをそのまま変えてしまう
             const icon = self.getUserIcon(tweet, false, ':not(.error):not([onerror])');
             if (icon !== null) icon.src = icon.getAttribute('data-lazy-src');
-            tweetBox.style.cursor = 'pointer';
-            tweetBox.classList.add(NS_EVENT_CONFIGED_CLASS);
-            tweetBox.addEventListener('click', (e) => {
+            twBox.style.cursor = 'pointer';
+            twBox.classList.add(NS_EVENT_CONFIGED_CLASS);
+            twBox.addEventListener('click', (e) => {
               const baseTweet = e.target.closest('.list_box.type_tweet');
               self.reactModal_.show(baseTweet);
             });
@@ -576,21 +583,34 @@
     static getReactTweets(officialTweet) {
       // console.log('getReactTweets');
       const reactTweets = [];
+      let ninjaFlg = false;
       let nextTweet = officialTweet.nextElementSibling;
       while (nextTweet !== null) {
-        // 次の公式ツイートが出てきたら停止
-        if (NinjaManager.isNinja(nextTweet)) break;
+        // 次の公式ツイート or 最下部のページネーションが出てきたら停止
+        ninjaFlg = NinjaManager.isNinja(nextTweet);
+        if (ninjaFlg) break;
+        if (nextTweet.className == 'pagenation') break;
         const cloneTweet = nextTweet.cloneNode(true);
         cloneTweet.style.display = 'block';
         reactTweets.push(cloneTweet);
         // liの最後まで到達したらnullが返ってくるので次のulに進む
-        if (nextTweet.nextElementSibling === null) {
-          nextTweet = nextTweet.parentElement.nextElementSibling;
-          if (nextTweet.tagName !== 'UL') break;
-          nextTweet = nextTweet.children[0];
-        } else {
-          nextTweet = nextTweet.nextElementSibling;
-        }
+        // togetter側の仕様変更により不要になった？
+        // if (nextTweet.nextElementSibling === null) {
+        //   nextTweet = nextTweet.parentElement.nextElementSibling;
+        //   if (nextTweet.tagName !== 'UL') break;
+        //   nextTweet = nextTweet.children[0];
+        // } else {
+        //   nextTweet = nextTweet.nextElementSibling;
+        // }
+        nextTweet = nextTweet.nextElementSibling;
+      }
+      // 公式ツイートが出てこないまま終わった場合、次のツイートの取りこぼしがある可能性を示唆
+      if (!ninjaFlg){
+        const divWarn = document.createElement('div');
+        divWarn.style.fontWeight = 'bold';
+        divWarn.innerHTML = '※TogetterSlyerからのお知らせ※<br>次のページにも実況ツイートが残っています。<br>'+
+        'もし取りこぼした実況ツイートも確認したい場合、次の公式ツイートを読み込んでから再度表示させてください。';
+        reactTweets.push(divWarn);
       }
       return reactTweets;
     }
