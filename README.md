@@ -2,8 +2,8 @@
 Togetterのニンジャスレイヤー実況まとめを見やすくする
 
 # 動作確認環境
-- Firefox 59.0.2 + Tamppermonkey
-- GoogleChrome 66.0.3359.117 + Tamppermonkey
+- Firefox 60.0.2 + Tamppermonkey
+- GoogleChrome 66.0.3359.181 + Tamppermonkey
 
 # インストール方法
 FirefoxかGoogleChromeのどちらかでアドオン「Tampermonkey」をインストールする。
