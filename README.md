@@ -2,8 +2,7 @@
 Togetterのニンジャスレイヤー実況まとめを見やすくする
 
 # どんな風になるの？
-![sample](https://github.com/rizenback000/TogetterSlyr/blob/media/media/sample.gif)
-
+![sample](https://github.com/rizenback000/TogetterSlyr/blob/media/sample.gif)
 
 # 動作確認環境
 - Firefox 60.0.2 + Tamppermonkey
@@ -20,9 +19,9 @@ FirefoxかGoogleChromeのどちらかでアドオン「Tampermonkey」をイン�
 1. Togetter上部にあるメニューボタンの下の「このページからまとめ読み開始」ボタンを押す
 1. 気になった公式ツイートの発言をクリックすると直後の実況が見れるようになる
 
-
-#仕様上の注意
-PCパワーが足りてないと1つのツイートにめちゃくちゃ反応が付いてる時かなり重くなります…
+# 使用上の注意
+1つのツイートにすごい数の反応があるとPCパワーが足りないと重くなります。
+場合によってはブラウザがぷちフリーズするかも…
 
 ## License
 MIT
