@@ -225,7 +225,7 @@
             // twBoxの末尾に追加
             self.statusBottom_.parentNode.insertBefore(twFragment, self.statusBottom_);
             maxPage--;
-            console.log(`complete maxPage=${maxPage} url=${tgtUrl}`);
+            // console.log(`complete maxPage=${maxPage} url=${tgtUrl}`);
 
             // シームレスロードのURL取得の為、maxPageがどうであれ次ページURL取得
             try {
@@ -474,6 +474,7 @@
       this.SCRIPT_NAME = GM_info.script.name;
       this.ClassName = {
         STATUS: self.SCRIPT_NAME+'_status',
+        EVENT_CONFIGED: '_event_configured'
       };
 
 
@@ -591,12 +592,11 @@
     addEventNinja() {
       const self = this;
       const twList = this.getNinjatwList();
-      const NS_EVENT_CONFIGED_CLASS = 'ns_event_configured';
 
       Array.from(twList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
           // イベント設定済みかどうかを独自クラスで判断する
-          const twBox = tweet.querySelector(`.tweet_wrap:not(.${NS_EVENT_CONFIGED_CLASS})`);
+          const twBox = tweet.querySelector(`.tweet_wrap:not(.${self.ClassName.EVENT_CONFIGED})`);
           if (twBox !== null) {
             // Togetter公式のLazyLoadエラー.error(ページ閲覧時に表示されたもの)未設定かつ、
             // 独自onerror未設定の公式ツイートのアイコン画像はキャッシュに残ってるはずなので
@@ -604,7 +604,7 @@
             const icon = self.getUserIcon(tweet, false, ':not(.error):not([onerror])');
             if (icon !== null) icon.src = icon.getAttribute('data-lazy-src');
             twBox.style.cursor = 'pointer';
-            twBox.classList.add(NS_EVENT_CONFIGED_CLASS);
+            twBox.classList.add(self.ClassName.EVENT_CONFIGED);
             twBox.addEventListener('click', (e) => {
               const baseTweet = e.target.closest('.list_box.type_tweet');
               self.reactModal_.show(baseTweet);
