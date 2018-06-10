@@ -2,11 +2,11 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.5.0
+// @version     1.6.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
-// @grant       none
+// @grant       GM_info
 // ==/UserScript==
 
 /*
@@ -65,7 +65,7 @@
     /**
      * getTweetBox - 全ツイートリストの取得(親を含む)
      *
-     * @param  {Element==} body  description
+     * @param  {Element=} body  description
      * @return {Element=}       description
      */
     getTweetBox(clone, body) {
@@ -108,6 +108,18 @@
     getPagination(body) {
       if (typeof body === 'undefined') body = this.getTweetBox();
       return body.querySelector('.pagenation');
+    }
+
+
+    /**
+     * getTitleBox - 各ページのサブタイトルみたいなやつ
+     *
+     * @param  {Element=} body 探索するElementを指定する
+     * @return {ELement}  description
+     */
+    getTitleBox(body) {
+      if (typeof body === 'undefined') body = document;
+      return body.getElementsByClassName('title_box')[0];
     }
 
 
@@ -166,10 +178,8 @@
     getUserIcon(tweet, clone, filter) {
       if (typeof tweet === 'undefined') tweet = document;
       if (typeof clone === 'undefined') clone = false;
-      const userIcon = tweet.querySelector('.user_link img' + filter);
-      if (clone) {
-        return userIcon.cloneNode(true);
-      }
+      const userIcon = tweet.querySelector(`.user_link img${filter}`);
+      if (clone) return userIcon.cloneNode(true);
       return userIcon;
     }
 
@@ -184,7 +194,7 @@
     getUserIconList(clone, filter) {
       if (typeof clone === 'undefined') clone = false;
       if (typeof filter === 'undefined') filter = '';
-      return this.getTweetList(clone, document, '.user_link img' + filter);
+      return this.getTweetList(clone, document, `.user_link img${filter}`);
     }
 
 
@@ -198,14 +208,12 @@
     loadPages(maxPage, tgtUrl) {
       const self = this;
       const xhr = new XMLHttpRequest();
-      const pagination = self.getPagination();
       if (typeof maxPage === 'undefined') maxPage = self.getMaxPage() - self.getNowPage();
       if (typeof tgtUrl === 'undefined') tgtUrl = self.getNextPageUrl();
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
-
             const resPage = self.getNowPage(xhr.response);
             const twList = self.getTweetList(false, xhr.response);
             const twFragment = document.createDocumentFragment();
@@ -214,10 +222,10 @@
               tweet.dataset.acqurl = xhr.response.URL;
               twFragment.appendChild(tweet);
             });
-            // ページネーションの直後に追加(twBoxの末尾に追加)
-            pagination.parentNode.insertBefore(twFragment, pagination);
+            // twBoxの末尾に追加
+            self.statusBottom_.parentNode.insertBefore(twFragment, self.statusBottom_);
             maxPage--;
-            // console.log('complete maxPage=' + maxPage + ' url=' + tgtUrl);
+            console.log(`complete maxPage=${maxPage} url=${tgtUrl}`);
 
             // シームレスロードのURL取得の為、maxPageがどうであれ次ページURL取得
             try {
@@ -237,10 +245,10 @@
               setTimeout(() => self.loadPages(maxPage, tgtUrl), delay);
             } else {
               self.addEventNinja();
-              if( self.getMaxPage() <= resPage ){
+              if ( self.getMaxPage() <= resPage ) {
                 self.setStatusText('最後のページまで読み込みを完了しました');
-              }else{
-                self.setStatusText(resPage+'ページまで読み込み完了しました');
+              } else {
+                self.setStatusText(resPage+'ページまで読み込み完了しました<br>次のツイートが出てこない場合はもう一度スクロールしてください');
               }
             }
           }
@@ -249,7 +257,9 @@
       };
 
       if (maxPage > 0) {
-        self.setStatusText('読み込み中... 残り:' + maxPage + 'ページ)');
+        let statusText = '読み込み中...';
+        if (maxPage > 1) statusText = `${statusText} / 残り:${maxPage}ページ)`;
+        self.setStatusText(statusText);
         xhr.open('GET', tgtUrl, true);
         xhr.responseType = 'document';
         xhr.send();
@@ -266,7 +276,6 @@
    * 参考: https://syncer.jp/jquery-modal-window
    */
   class ModalWindow {
-
     constructor() {
       const self = this;
 
@@ -285,7 +294,7 @@
       this.modalContentsMain.id = 'modalContentsMain';
       this.modalOverlay.id = 'modelOverlay';
 
-      this.modalContents.style.width = '50%';
+      this.modalContents.style.width = '70%';
       this.modalContents.style.height = '80%';
       this.modalContents.style.margin = '1.5em auto 0';
       this.modalContents.style.padding = '5px 20px 10px';
@@ -314,11 +323,12 @@
         self.hide();
       });
 
-      document.body.appendChild(this.modalOverlay);
-      document.body.appendChild(this.modalContents);
       this.modalContents.appendChild(this.modalHeader);
       this.modalContents.appendChild(this.modalContentsMain);
+      document.body.appendChild(this.modalOverlay);
+      document.body.appendChild(this.modalContents);
 
+      // リサイズ処理中フラグ
       let queue = null;
       window.addEventListener('resize', function() {
         clearTimeout(queue);
@@ -326,35 +336,35 @@
       });
     }
 
-    get modalContents(){
+    get modalContents() {
       return this._modalContents;
     }
 
-    set modalContents(elem){
+    set modalContents(elem) {
       this._modalContents = elem;
     }
 
-    get modalContentsMain(){
+    get modalContentsMain() {
       return this._modalContentsMain;
     }
 
-    set modalContentsMain(elem){
+    set modalContentsMain(elem) {
       this._modalContentsMain = elem;
     }
 
-    get modalHeader(){
+    get modalHeader() {
       return this._modalHeader;
     }
 
-    set modalHeader(elem){
+    set modalHeader(elem) {
       this._modalHeader = elem;
     }
 
-    get modalOverlay(){
+    get modalOverlay() {
       return this._modalOverlay;
     }
 
-    set modalOverlay(elem){
+    set modalOverlay(elem) {
       this._modalOverlay = elem;
     }
 
@@ -400,7 +410,7 @@
       this.modalOverlay.style.display = 'none';
       this.lazyDestroy();
 
-      // スクロール位置を移動
+      // スクロール位置を開く前の位置に戻す
       window.scrollTo(this.windowScrollXPos_, this.windowScrollYPos_);
     }
 
@@ -454,9 +464,6 @@
   }
 
 
-
-
-
   /**
    * ニンジャスレイヤー実況管理
    */
@@ -464,6 +471,10 @@
     constructor() {
       super();
       const self = this;
+      this.SCRIPT_NAME = GM_info.script.name;
+      this.ClassName = {
+        STATUS: self.SCRIPT_NAME+'_status',
+      };
 
 
       // 実況まとめなのかを判断する
@@ -473,35 +484,33 @@
 
       // リアクション表示モーダルウィンドウ
       this.reactModal_ = new ModalWindow();
-
-
       // シームレスロードで次に読み込むURL
       this.seamlessNextUrl_ = '';
       // ステータステキスト
-      this.statusDiv_ = document.createElement('div');
-      this.statusDiv_.style.fontWeight = 'bold';
+      this.statusBottom_ = document.createElement('div');
+      this.statusBottom_.style.fontWeight = 'bold';
+      this.statusBottom_.classList.add(self.ClassName.STATUS);
+
       // ページ読み込みボタン
       this.loadBtn_ = document.createElement('button');
       this.loadBtn_.textContent = 'このページからまとめ読み開始';
       this.loadBtn_.style.width = '100%';
-      this.loadBtn_.addEventListener('click', function(e) {
+      this.loadBtn_.addEventListener('click', (e) => {
         // 続きを読むがあればクリック
         self.clickReadMore();
         self.loadBtn_.style.display = 'none';
-        document.getElementsByClassName('contents_main')[0].style.display = 'none';
         self.loadPages(0);
-        document.getElementsByClassName('contents_main')[0].style.display = 'block';
-        self.setStatusText('◆TogetterSlyr◆<br>スクロールしていくと自動的に次のページを読み込みます'+
+
+        const pagination = self.getPagination();
+        pagination.parentNode.insertBefore(self.statusBottom_, pagination);
+        self.setStatusText(`スクロールしていくと自動的に次のページを読み込みます`+
         '<br>(AutoPagerizeのようなアドオンなどは無効にしてください)');
       });
-      document.getElementsByClassName('title_box')[0].append(this.loadBtn_);
-      document.getElementsByClassName('title_box')[0].append(this.statusDiv_);
 
-      // シームレスロード
-      window.onscroll = () => self.seamlessLoad();
 
+      // モーダル表示時のイベント
       // 本当にこんな実装でいいのか全然わからん
-      document.addEventListener('modalShow', function(e){
+      document.addEventListener('modalShow', function(e) {
         const twBox = document.createElement('div');
         const twFragment = document.createDocumentFragment();
         const twNinja = e.detail;
@@ -529,7 +538,12 @@
         self.reactModal_.modalContentsMain.appendChild(twBox);
       });
 
+      // ページに追加
+      const titleBox = self.getTitleBox();
+      titleBox.appendChild(this.loadBtn_);
 
+      // シームレスロード
+      window.onscroll = () => self.seamlessLoad();
     }
 
 
@@ -551,10 +565,20 @@
      * setStatusText - ステータステキストの設定
      *
      * @param  {string} html 任意のステータステキスト
+     * @param {number=} index 0=top, 1=bottom
      * @return {void}
      */
-    setStatusText(html) {
-      this.statusDiv_.innerHTML = html;
+    setStatusText(html, index) {
+      const self = this;
+      const statuses = document.getElementsByClassName(this.ClassName.STATUS);
+      html = `◆${self.SCRIPT_NAME}◆<br>${html}`;
+      if (typeof index === 'undefined') {
+        Array.from(statuses, (status) => {
+          status.innerHTML = html;
+        });
+      } else {
+        statuses[index].innerHTML = html;
+      }
     }
 
 
@@ -567,12 +591,12 @@
     addEventNinja() {
       const self = this;
       const twList = this.getNinjatwList();
-      const NS_EVENT_CONFIGED_CLASS = '.ns_event_configured';
+      const NS_EVENT_CONFIGED_CLASS = 'ns_event_configured';
 
       Array.from(twList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
-          // イベント設定済みかどうかをクラスで判断する
-          const twBox = tweet.querySelector('.tweet_wrap:not(' + NS_EVENT_CONFIGED_CLASS + ')');
+          // イベント設定済みかどうかを独自クラスで判断する
+          const twBox = tweet.querySelector(`.tweet_wrap:not(.${NS_EVENT_CONFIGED_CLASS})`);
           if (twBox !== null) {
             // Togetter公式のLazyLoadエラー.error(ページ閲覧時に表示されたもの)未設定かつ、
             // 独自onerror未設定の公式ツイートのアイコン画像はキャッシュに残ってるはずなので
@@ -598,7 +622,7 @@
       const eventUnsetIcons = self.getUserIconList(false, ':not(.error):not([onerror])');
       Array.from(eventUnsetIcons, (icon) => {
         const errImg = icon.getAttribute('data-error-image');
-        icon.setAttribute('onerror', 'this.onerror=null; this.src=\'' + errImg + '\'');
+        icon.setAttribute('onerror', `this.onerror=null; this.src='${errImg}'`);
       });
     }
 
@@ -649,20 +673,22 @@
         // 次の公式ツイート or 最下部のページネーションが出てきたら停止
         ninjaFlg = NinjaManager.isNinja(nextTweet);
         if (ninjaFlg) break;
-        if (nextTweet.className == 'pagenation') break;
-        const cloneTweet = nextTweet.cloneNode(true);
-        cloneTweet.style.display = 'block';
-        reactTweets.push(cloneTweet);
+        if (nextTweet.className === 'list_box type_tweet') {
+          const cloneTweet = nextTweet.cloneNode(true);
+          cloneTweet.style.display = 'block';
+          reactTweets.push(cloneTweet);
+        }
         nextTweet = nextTweet.nextElementSibling;
       }
       // 公式ツイートが出てこないまま終わった場合、次のツイートの取りこぼしがある可能性を示唆
-      if (!ninjaFlg){
-        const loadedPage = parseInt(self.getTweetBox().lastElementChild.previousElementSibling.dataset.acqpage);
+      if (!ninjaFlg) {
+        const loadedPage = parseInt(self.statusBottom_.previousElementSibling.dataset.acqpage);
         // 読み込み済み
-        if ( self.getMaxPage() > loadedPage ){
+        // console.log(`${self.getMaxPage()} > ${loadedPage}`);
+        if ( self.getMaxPage() > loadedPage ) {
           const divWarn = document.createElement('div');
           divWarn.style.fontWeight = 'bold';
-          divWarn.innerHTML = '◆TogetterSlyer◆<br>次のページにも実況ツイートが残っています。<br>'+
+          divWarn.innerHTML = `◆${self.SCRIPT_NAME}◆<br>次のページにも実況ツイートが残っています。<br>`+
           'もし取りこぼした実況ツイートも確認したい場合、次の公式ツイートを読み込んでから再度表示させてください。';
           reactTweets.push(divWarn);
         }
@@ -684,6 +710,4 @@
   }
 
   const nsm = new NinjaManager();
-
-
 })();
