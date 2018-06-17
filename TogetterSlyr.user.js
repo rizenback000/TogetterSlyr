@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.6.0
+// @version     1.7.0
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -79,16 +79,21 @@
      *
      * @param  {boolean=} clone trueでコピーを作成
      * @param  {Element=} body 探索するElementを指定する
-     * @param  {string=} selector セレクター
+     * @param  {string=} optionSelector 絞り込む時用のセレクター
      * @return {nodeList|Element[]}  cloneがfalseならnodeList、trueならElement配列
      */
-    getTweetList(clone, body, selector) {
+    getTweetList(clone, body, optionSelector) {
       if (typeof clone === 'undefined') clone = false;
       if (typeof body === 'undefined') body = document;
-      if (typeof selector === 'undefined') selector = '.list_box.type_tweet';
+      if (typeof optionSelector === 'undefined') optionSelector = '';
 
-      const tweets = body.querySelectorAll(selector);
-      // console.log('getTweetList = '+selector);
+      const optfirst = optionSelector.slice(0,1);
+      if (optionSelector !== '' && optfirst !== ':' &&
+        optfirst !== ' ' && optfirst !== '['){
+          optionSelector = ' ' + optionSelector;
+      }
+
+      const tweets = body.querySelectorAll('.list_box.type_tweet'+optionSelector);
       // console.log(tweets);
       if (clone) {
         const arr = [];
@@ -309,6 +314,7 @@
 
       this.modalHeader.style.borderBottom = '1px solid #aaa';
       this.modalContentsMain.style.overflowY = 'auto';
+      this.modalContentsMain.style.position = 'relative';
 
       this.modalOverlay.style.zIndex = '2';
       this.modalOverlay.style.display = 'none';
@@ -334,6 +340,7 @@
         clearTimeout(queue);
         queue = setTimeout(() => self.centeringModalSyncer(), 300);
       });
+
     }
 
     get modalContents() {
@@ -344,10 +351,23 @@
       this._modalContents = elem;
     }
 
+
+    /**
+     * get modalContentsMain - description
+     *
+     * @return {ELement}  description
+     */
     get modalContentsMain() {
       return this._modalContentsMain;
     }
 
+
+    /**
+     * set modalContentsMain - description
+     *
+     * @param  {ELement} elem description
+     * @return {void}      description
+     */
     set modalContentsMain(elem) {
       this._modalContentsMain = elem;
     }
@@ -487,6 +507,8 @@
       this.reactModal_ = new ModalWindow();
       // シームレスロードで次に読み込むURL
       this.seamlessNextUrl_ = '';
+      // シームレス
+      this.seamlessReact_ = false;
       // ステータステキスト
       this.statusBottom_ = document.createElement('div');
       this.statusBottom_.style.fontWeight = 'bold';
@@ -513,6 +535,7 @@
       // 本当にこんな実装でいいのか全然わからん
       document.addEventListener('modalShow', function(e) {
         const twBox = document.createElement('div');
+        // const twBox = self.reactModal_.modalContentsMain;
         const twFragment = document.createDocumentFragment();
         const twNinja = e.detail;
         const tweetsArr = self.getReactTweets(twNinja);
@@ -545,6 +568,7 @@
 
       // シームレスロード
       window.onscroll = () => self.seamlessLoad();
+      this.reactModal_.modalContentsMain.onscroll = () => self.seamlessReactLoad();
     }
 
 
@@ -559,7 +583,7 @@
       if (typeof clone === 'undefined') clone = false;
       if (typeof body === 'undefined') body = document;
       // 非表示になっていないツイートは公式のツイートとみなす
-      return this.getTweetList(clone, body, '.list_box.type_tweet:not([style*=display])');
+      return this.getTweetList(clone, body, ':not([style*=display])');
     }
 
     /**
@@ -633,26 +657,62 @@
      * 参考: https://q-az.net/without-jquery-height-width-offset-scrolltop/
      * @return {void}
      */
-    seamlessLoad() {
+     seamlessLoad() {
+       const self = this;
+
+       // 次のページ読み込み中の場合は処理を行わない
+       if (self.seamlessNextUrl_ !== '') {
+         const tgtRect = self.getPagination().getBoundingClientRect();
+         const winHeight = window.innerHeight;
+         const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
+         const loadPos = tgtRect.top + scrollPos;
+
+         // console.log(winHeight + scrollPos + '>'+ loadPos);
+
+         if (winHeight + scrollPos > loadPos) {
+           // console.log(self.seamlessNextUrl_);
+           self.loadPages(1, self.seamlessNextUrl_);
+           self.seamlessNextUrl_ = '';
+         }
+       }
+     }
+
+
+
+    /**
+     * seamlessReactLoad - 反応ツイートの一番下まで来た時に新たに反応ツイートを取得する
+     * https://so-zou.jp/web-app/tech/programming/javascript/event/handler/onscroll.htm
+     * @return {void}
+     */
+    seamlessReactLoad() {
       const self = this;
 
       // 次のページ読み込み中の場合は処理を行わない
-      if (self.seamlessNextUrl_ !== '') {
-        const pagination = self.getPagination();
-        const winHeight = window.innerHeight;
-        const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
-        const rect = pagination.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const paginationTop = rect.top + scrollTop;
-        const linkPos = paginationTop;
+      if (!self.seamlessReact_) {
 
-        // console.log(winHeight + scrollPos + '>'+ linkPos);
+        const mainBox = self.reactModal_.modalContentsMain;
+        const scrollPos = mainBox.scrollTop + mainBox.clientHeight;
+        // なぜかlast-childが効かない時がある。
+        // const loadTarget = mainBox.querySelector('.list_box.type_tweet:last-child');
+        let loadTarget = mainBox.querySelectorAll('.list_box.type_tweet');
+        loadTarget = loadTarget[loadTarget.length - 1];
+        const loadPos = loadTarget.offsetTop;
 
-        if (winHeight + scrollPos > linkPos) {
-          // console.log(self.seamlessNextUrl_);
-          self.loadPages(1, self.seamlessNextUrl_);
-          self.seamlessNextUrl_ = '';
+
+        console.log(`${scrollPos} > ${loadPos}`);
+
+        if (scrollPos > loadPos) {
+          console.log('we');
+          const twFragment = document.createDocumentFragment();
+          const baseTweet = self.getTweetList(false, document, `[data-index="${loadTarget.dataset.index}"]`)[0];
+          const reacts = self.getReactTweets(baseTweet);
+          Array.from(reacts, (react) => {
+            twFragment.appendChild(react);
+          });
+
+          mainBox.querySelector('div').appendChild(twFragment);
         }
+        self.seamlessReact_ = true;
       }
     }
 
@@ -669,16 +729,22 @@
       const reactTweets = [];
       let ninjaFlg = false;
       let nextTweet = officialTweet.nextElementSibling;
+      let cnt = 0;
       while (nextTweet !== null) {
         // 次の公式ツイート or 最下部のページネーションが出てきたら停止
         ninjaFlg = NinjaManager.isNinja(nextTweet);
-        if (ninjaFlg) break;
-        if (nextTweet.className === 'list_box type_tweet') {
+        if (ninjaFlg){
+           break;
+        }else if(cnt > 50){
+          console.log(cnt);
+          break;
+        }else if (nextTweet.className === 'list_box type_tweet') {
           const cloneTweet = nextTweet.cloneNode(true);
           cloneTweet.style.display = 'block';
           reactTweets.push(cloneTweet);
         }
         nextTweet = nextTweet.nextElementSibling;
+        cnt++;
       }
       // 公式ツイートが出てこないまま終わった場合、次のツイートの取りこぼしがある可能性を示唆
       if (!ninjaFlg) {
