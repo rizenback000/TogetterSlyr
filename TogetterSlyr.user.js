@@ -120,7 +120,7 @@
      * getTitleBox - 各ページのサブタイトルみたいなやつ
      *
      * @param  {Element=} body 探索するElementを指定する
-     * @return {ELement}  description
+     * @return {Element}  description
      */
     getTitleBox(body) {
       if (typeof body === 'undefined') body = document;
@@ -163,7 +163,7 @@
     /**
      * getNextPageUrl - 次ページのURLを取得
      *
-     * @param  {ELement=} body 探索するElementを指定
+     * @param  {Element=} body 探索するElementを指定
      * @return {string}      次ページのURL
      */
     getNextPageUrl(body) {
@@ -178,7 +178,7 @@
      * @param  {Element} tweet ユーザーアイコンを含むエレメント
      * @param  {boolean} clone trueでコピーを作成
      * @param  {string} filter セレクタのフィルター(:notとか)
-     * @return {ELement}       img要素
+     * @return {Element}       img要素
      */
     getUserIcon(tweet, clone, filter) {
       if (typeof tweet === 'undefined') tweet = document;
@@ -285,6 +285,10 @@
       const self = this;
 
       this.lazy_ = null;
+      this.SCRIPT_NAME = GM_info.script.name;
+      this.ClassName = {
+        LAZY_CONFIGED: `${self.SCRIPT_NAME}_lazy_configed`
+      };
 
       this.windowScrollXPos_ = 0;
       this.windowScrollYPos_ = 0;
@@ -355,7 +359,7 @@
     /**
      * get modalContentsMain - description
      *
-     * @return {ELement}  description
+     * @return {Element}  description
      */
     get modalContentsMain() {
       return this._modalContentsMain;
@@ -365,7 +369,7 @@
     /**
      * set modalContentsMain - description
      *
-     * @param  {ELement} elem description
+     * @param  {Element} elem description
      * @return {void}      description
      */
     set modalContentsMain(elem) {
@@ -462,12 +466,14 @@
      */
     lazySet() {
       // console.log('lazySet');
+      const self = this;
       const opt = {
         selector: 'lazy',
         src: 'data-lazy-src',
       };
-      const images = document.querySelectorAll('#modalContent .lazy');
+      const images = document.querySelectorAll(`#modalContent .lazy:not(.${self.ClassName.LAZY_CONFIGED})`);
       this.lazy_ = lazyload(images, opt);
+      Array.from(images, (img) => img.classList.add(self.ClassName.LAZY_CONFIGED) );
     }
 
 
@@ -493,10 +499,11 @@
       const self = this;
       this.SCRIPT_NAME = GM_info.script.name;
       this.ClassName = {
-        STATUS: self.SCRIPT_NAME+'_status',
-        EVENT_CONFIGED: '_event_configured'
+        STATUS_TXT: () => { return self.ClassName.original('status') },
+        EVENT_CONFIGED: () => { return self.ClassName.original('event_configed') },
+        REACT_INFO: () => { return self.ClassName.original('react_info') },
+        original: (str) => { return `${self.SCRIPT_NAME}_${str}`; }
       };
-
 
       // 実況まとめなのかを判断する
       const tweets = this.getTweetList();
@@ -507,12 +514,17 @@
       this.reactModal_ = new ModalWindow();
       // シームレスロードで次に読み込むURL
       this.seamlessNextUrl_ = '';
-      // シームレス
-      this.seamlessReact_ = false;
+      // シームレス反応読み込みの状態
+      this.seamlessReact_ = {
+        yet: 0,
+        loading: 1,
+        complete: 2
+      };
+      this.seamlessReactStatus = this.seamlessReact_.yet;
       // ステータステキスト
       this.statusBottom_ = document.createElement('div');
       this.statusBottom_.style.fontWeight = 'bold';
-      this.statusBottom_.classList.add(self.ClassName.STATUS);
+      this.statusBottom_.id = self.ClassName.STATUS_TXT();
 
       // ページ読み込みボタン
       this.loadBtn_ = document.createElement('button');
@@ -560,6 +572,7 @@
         }
         self.reactModal_.modalHeader.appendChild(ninjaTweet);
         self.reactModal_.modalContentsMain.appendChild(twBox);
+        self.seamlessReactStatus = self.seamlessReact_.yet;
       });
 
       // ページに追加
@@ -590,20 +603,13 @@
      * setStatusText - ステータステキストの設定
      *
      * @param  {string} html 任意のステータステキスト
-     * @param {number=} index 0=top, 1=bottom
      * @return {void}
      */
-    setStatusText(html, index) {
+    setStatusText(html) {
       const self = this;
-      const statuses = document.getElementsByClassName(this.ClassName.STATUS);
+      const status = document.getElementById(this.ClassName.STATUS_TXT());
       html = `◆${self.SCRIPT_NAME}◆<br>${html}`;
-      if (typeof index === 'undefined') {
-        Array.from(statuses, (status) => {
-          status.innerHTML = html;
-        });
-      } else {
-        statuses[index].innerHTML = html;
-      }
+      status.innerHTML = html;
     }
 
 
@@ -614,13 +620,15 @@
      * @return {void}
      */
     addEventNinja() {
+      // console.log('addEventNinja');
+
       const self = this;
       const twList = this.getNinjatwList();
 
       Array.from(twList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
           // イベント設定済みかどうかを独自クラスで判断する
-          const twBox = tweet.querySelector(`.tweet_wrap:not(.${self.ClassName.EVENT_CONFIGED})`);
+          const twBox = tweet.querySelector(`.tweet_wrap:not(.${self.ClassName.EVENT_CONFIGED()})`);
           if (twBox !== null) {
             // Togetter公式のLazyLoadエラー.error(ページ閲覧時に表示されたもの)未設定かつ、
             // 独自onerror未設定の公式ツイートのアイコン画像はキャッシュに残ってるはずなので
@@ -628,7 +636,7 @@
             const icon = self.getUserIcon(tweet, false, ':not(.error):not([onerror])');
             if (icon !== null) icon.src = icon.getAttribute('data-lazy-src');
             twBox.style.cursor = 'pointer';
-            twBox.classList.add(self.ClassName.EVENT_CONFIGED);
+            twBox.classList.add(self.ClassName.EVENT_CONFIGED());
             twBox.addEventListener('click', (e) => {
               const baseTweet = e.target.closest('.list_box.type_tweet');
               self.reactModal_.show(baseTweet);
@@ -649,6 +657,8 @@
         icon.setAttribute('onerror', `this.onerror=null; this.src='${errImg}'`);
       });
     }
+
+
 
 
     /**
@@ -687,32 +697,27 @@
     seamlessReactLoad() {
       const self = this;
 
-      // 次のページ読み込み中の場合は処理を行わない
-      if (!self.seamlessReact_) {
+      // 次のページ読み込み中/完了時の場合は処理を行わない
+      if (self.seamlessReactStatus !== self.seamlessReact_.complete ) {
 
         const mainBox = self.reactModal_.modalContentsMain;
         const scrollPos = mainBox.scrollTop + mainBox.clientHeight;
-        // なぜかlast-childが効かない時がある。
+        // なぜかlast-childが効かない時がある。console上でもダメなので読み込みの順番の問題でもない
         // const loadTarget = mainBox.querySelector('.list_box.type_tweet:last-child');
         let loadTarget = mainBox.querySelectorAll('.list_box.type_tweet');
         loadTarget = loadTarget[loadTarget.length - 1];
         const loadPos = loadTarget.offsetTop;
 
-
-        console.log(`${scrollPos} > ${loadPos}`);
-
+        // console.log(`${scrollPos} > ${loadPos}`);
         if (scrollPos > loadPos) {
-          console.log('we');
           const twFragment = document.createDocumentFragment();
           const baseTweet = self.getTweetList(false, document, `[data-index="${loadTarget.dataset.index}"]`)[0];
           const reacts = self.getReactTweets(baseTweet);
-          Array.from(reacts, (react) => {
-            twFragment.appendChild(react);
-          });
+          Array.from(reacts, (react) => twFragment.appendChild(react) );
 
           mainBox.querySelector('div').appendChild(twFragment);
+          self.reactModal_.lazySet();
         }
-        self.seamlessReact_ = true;
       }
     }
 
@@ -727,16 +732,19 @@
       // console.log('getReactTweets');
       const self = this;
       const reactTweets = [];
+      const ONCE_MAX_LOADING = 50;
       let ninjaFlg = false;
       let nextTweet = officialTweet.nextElementSibling;
       let cnt = 0;
+
+      self.seamlessReactStatus = self.seamlessReact_.loading;
       while (nextTweet !== null) {
-        // 次の公式ツイート or 最下部のページネーションが出てきたら停止
+        // 次の公式ツイート or 50件の読み込みが終わったら
         ninjaFlg = NinjaManager.isNinja(nextTweet);
         if (ninjaFlg){
+           self.seamlessReactStatus = self.seamlessReact_.complete;
            break;
-        }else if(cnt > 50){
-          console.log(cnt);
+        }else if(cnt > ONCE_MAX_LOADING){
           break;
         }else if (nextTweet.className === 'list_box type_tweet') {
           const cloneTweet = nextTweet.cloneNode(true);
@@ -747,16 +755,24 @@
         cnt++;
       }
       // 公式ツイートが出てこないまま終わった場合、次のツイートの取りこぼしがある可能性を示唆
-      if (!ninjaFlg) {
-        const loadedPage = parseInt(self.statusBottom_.previousElementSibling.dataset.acqpage);
+      // console.log(`${self.seamlessReactStatus} !== ${self.seamlessReact_.complete}  ${self.seamlessReactStatus !== self.seamlessReact_.complete}`);
+      // console.log(!ninjaFlg && self.seamlessReactStatus !== self.seamlessReact_.complete);
+      if (!ninjaFlg && self.seamlessReactStatus !== self.seamlessReact_.complete) {
+        let acqPage = self.statusBottom_.previousElementSibling.dataset.acqpage;
+        // acqPageが取得できない場合は1ページ目と過程する
+        if (typeof acqPage === 'undefined') acqPage = 1;
+        const loadedPage = parseInt(acqPage);
         // 読み込み済み
         // console.log(`${self.getMaxPage()} > ${loadedPage}`);
         if ( self.getMaxPage() > loadedPage ) {
-          const divWarn = document.createElement('div');
-          divWarn.style.fontWeight = 'bold';
-          divWarn.innerHTML = `◆${self.SCRIPT_NAME}◆<br>次のページにも実況ツイートが残っています。<br>`+
+          const oldInfo = document.getElementById(self.ClassName.REACT_INFO());
+          if (oldInfo !== null) oldInfo.parentNode.removeChild(oldInfo);
+          const newInfo = document.createElement('div');
+          newInfo.id = self.ClassName.REACT_INFO();
+          newInfo.style.fontWeight = 'bold';
+          newInfo.innerHTML = `◆${self.SCRIPT_NAME}◆<br>次のページにも実況ツイートが残っています。<br>`+
           'もし取りこぼした実況ツイートも確認したい場合、次の公式ツイートを読み込んでから再度表示させてください。';
-          reactTweets.push(divWarn);
+          reactTweets.push(newInfo);
         }
       }
       return reactTweets;
