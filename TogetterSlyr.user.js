@@ -66,7 +66,7 @@
      * getTweetBox - 全ツイートリストの取得(親を含む)
      *
      * @param  {Element=} body  description
-     * @return {Element=}       description
+     * @return {Element}       description
      */
     getTweetBox(clone, body) {
       if (typeof body === 'undefined') body = document;
@@ -87,10 +87,10 @@
       if (typeof body === 'undefined') body = document;
       if (typeof optionSelector === 'undefined') optionSelector = '';
 
-      const optfirst = optionSelector.slice(0,1);
+      const optfirst = optionSelector.slice(0, 1);
       if (optionSelector !== '' && optfirst !== ':' &&
-        optfirst !== ' ' && optfirst !== '['){
-          optionSelector = ' ' + optionSelector;
+        optfirst !== ' ' && optfirst !== '[') {
+        optionSelector = ' ' + optionSelector;
       }
 
       const tweets = body.querySelectorAll('.list_box.type_tweet'+optionSelector);
@@ -287,7 +287,7 @@
       this.lazy_ = null;
       this.SCRIPT_NAME = GM_info.script.name;
       this.ClassName = {
-        LAZY_CONFIGED: `${self.SCRIPT_NAME}_lazy_configed`
+        LAZY_CONFIGED: `${self.SCRIPT_NAME}_lazy_configed`,
       };
 
       this.windowScrollXPos_ = 0;
@@ -344,7 +344,6 @@
         clearTimeout(queue);
         queue = setTimeout(() => self.centeringModalSyncer(), 300);
       });
-
     }
 
     get modalContents() {
@@ -499,10 +498,10 @@
       const self = this;
       this.SCRIPT_NAME = GM_info.script.name;
       this.ClassName = {
-        STATUS_TXT: () => { return self.ClassName.original('status') },
-        EVENT_CONFIGED: () => { return self.ClassName.original('event_configed') },
-        REACT_INFO: () => { return self.ClassName.original('react_info') },
-        original: (str) => { return `${self.SCRIPT_NAME}_${str}`; }
+        STATUS_TXT: () => { return self.ClassName.original('status'); },
+        EVENT_CONFIGED: () => { return self.ClassName.original('event_configed'); },
+        REACT_INFO: () => { return self.ClassName.original('react_info'); },
+        original: (str) => { return `${self.SCRIPT_NAME}_${str}`; },
       };
 
       // 実況まとめなのかを判断する
@@ -518,7 +517,7 @@
       this.seamlessReact_ = {
         yet: 0,
         loading: 1,
-        complete: 2
+        complete: 2,
       };
       this.seamlessReactStatus = this.seamlessReact_.yet;
       // ステータステキスト
@@ -659,34 +658,31 @@
     }
 
 
-
-
     /**
      * seamlessLoad - Autopagerizeのように画面下まで来ると1ページロード
      * 参考: http://cly7796.net/wp/javascript/implement-infinite-scrolling/
      * 参考: https://q-az.net/without-jquery-height-width-offset-scrolltop/
      * @return {void}
      */
-     seamlessLoad() {
-       const self = this;
+    seamlessLoad() {
+      const self = this;
 
-       // 次のページ読み込み中の場合は処理を行わない
-       if (self.seamlessNextUrl_ !== '') {
-         const tgtRect = self.getPagination().getBoundingClientRect();
-         const winHeight = window.innerHeight;
-         const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
-         const loadPos = tgtRect.top + scrollPos;
+      // 次のページ読み込み中の場合は処理を行わない
+      if (self.seamlessNextUrl_ !== '') {
+        const tgtRect = self.getPagination().getBoundingClientRect();
+        const winHeight = window.innerHeight;
+        const scrollPos = document.documentElement.scrollTop || document.body.scrollTop;
+        const loadPos = tgtRect.top + scrollPos;
 
-         // console.log(winHeight + scrollPos + '>'+ loadPos);
+        // console.log(winHeight + scrollPos + '>'+ loadPos);
 
-         if (winHeight + scrollPos > loadPos) {
-           // console.log(self.seamlessNextUrl_);
-           self.loadPages(1, self.seamlessNextUrl_);
-           self.seamlessNextUrl_ = '';
-         }
-       }
-     }
-
+        if (winHeight + scrollPos > loadPos) {
+          // console.log(self.seamlessNextUrl_);
+          self.loadPages(1, self.seamlessNextUrl_);
+          self.seamlessNextUrl_ = '';
+        }
+      }
+    }
 
 
     /**
@@ -699,7 +695,6 @@
 
       // 次のページ読み込み中/完了時の場合は処理を行わない
       if (self.seamlessReactStatus !== self.seamlessReact_.complete ) {
-
         const mainBox = self.reactModal_.modalContentsMain;
         const scrollPos = mainBox.scrollTop + mainBox.clientHeight;
         // なぜかlast-childが効かない時がある。console上でもダメなので読み込みの順番の問題でもない
@@ -741,12 +736,12 @@
       while (nextTweet !== null) {
         // 次の公式ツイート or 50件の読み込みが終わったら
         ninjaFlg = NinjaManager.isNinja(nextTweet);
-        if (ninjaFlg){
-           self.seamlessReactStatus = self.seamlessReact_.complete;
-           break;
-        }else if(cnt > ONCE_MAX_LOADING){
+        if (ninjaFlg) {
+          self.seamlessReactStatus = self.seamlessReact_.complete;
           break;
-        }else if (nextTweet.className === 'list_box type_tweet') {
+        } else if (cnt > ONCE_MAX_LOADING) {
+          break;
+        } else if (nextTweet.className === 'list_box type_tweet') {
           const cloneTweet = nextTweet.cloneNode(true);
           cloneTweet.style.display = 'block';
           reactTweets.push(cloneTweet);
