@@ -2,12 +2,12 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.6.0
+// @version     1.6.1
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
 // @grant       GM_info
-// ==/UserScript==
+// ==/UserScript==// //
 
 /*
     The MIT License (MIT)
@@ -107,7 +107,12 @@
      */
     getPagination(body) {
       if (typeof body === 'undefined') body = this.getTweetBox();
-      return body.querySelector('.pagenation');
+      const pagination = body.querySelector('.pagenation');
+      if (pagination === null){
+        return null;
+      }else{
+        return pagination;
+      }
     }
 
 
@@ -139,6 +144,8 @@
         if (page.nextElementSibling.textContent === '次へ') break;
         page = page.nextElementSibling;
       }
+
+      if (page === null) return 1;
       return Number(page.textContent);
     }
 
@@ -151,7 +158,12 @@
      */
     getNowPage(body) {
       if (typeof body === 'undefined') body = document;
-      return Number(this.getPagination(body).querySelector('.current').textContent);
+      const pagination = this.getPagination(body);
+      if (pagination === null){
+        return 1;
+      }else{
+        return Number(pagination.querySelector('.current').textContent);
+      }
     }
 
 
@@ -163,7 +175,10 @@
      */
     getNextPageUrl(body) {
       if (typeof body === 'undefined') body = document;
-      return this.getPagination(body).querySelector('a[rel=next]').href;
+      const pagination = this.getPagination(body);
+
+      if (pagination === null) return '';
+      return pagination.querySelector('a[rel=next]').href;
     }
 
 
@@ -503,9 +518,15 @@
         self.loadPages(0);
 
         const pagination = self.getPagination();
-        pagination.parentNode.insertBefore(self.statusBottom_, pagination);
-        self.setStatusText(`スクロールしていくと自動的に次のページを読み込みます`+
-        '<br>(AutoPagerizeのようなアドオンなどは無効にしてください)');
+        if (pagination !== null){
+          pagination.parentNode.insertBefore(self.statusBottom_, pagination);
+          self.setStatusText(`スクロールしていくと自動的に次のページを読み込みます`+
+          '<br>(AutoPagerizeのようなアドオンなどは無効にしてください)');
+          // シームレスロード
+          window.onscroll = () => self.seamlessLoad();
+        }else{
+          self.getTweetBox().appendChild(self.statusBottom_);
+        }
       });
 
 
@@ -543,8 +564,6 @@
       const titleBox = self.getTitleBox();
       titleBox.appendChild(this.loadBtn_);
 
-      // シームレスロード
-      window.onscroll = () => self.seamlessLoad();
     }
 
 
