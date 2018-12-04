@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.6.1
+// @version     1.6.2
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -615,7 +615,7 @@
       Array.from(twList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
           // イベント設定済みかどうかを独自クラスで判断する
-          const twBox = tweet.querySelector(`.tweet_wrap:not(.${self.ClassName.EVENT_CONFIGED})`);
+          const twBox = tweet.querySelector(`.tweet:not(.${self.ClassName.EVENT_CONFIGED})`);
           if (twBox !== null) {
             // Togetter公式のLazyLoadエラー.error(ページ閲覧時に表示されたもの)未設定かつ、
             // 独自onerror未設定の公式ツイートのアイコン画像はキャッシュに残ってるはずなので
