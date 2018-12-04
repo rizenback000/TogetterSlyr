@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.6.2
+// @version     1.6.3
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -708,7 +708,7 @@
           const divWarn = document.createElement('div');
           divWarn.style.fontWeight = 'bold';
           divWarn.innerHTML = `◆${self.SCRIPT_NAME}◆<br>次のページにも実況ツイートが残っています。<br>`+
-          'もし取りこぼした実況ツイートも確認したい場合、次の公式ツイートを読み込んでから再度表示させてください。';
+          'もし取りこぼした実況ツイートも確認したい場合、一旦実況ツイートを閉じてスクロールし、次の公式ツイートを読み込んでから再度表示させてください。';
           reactTweets.push(divWarn);
         }
       }
