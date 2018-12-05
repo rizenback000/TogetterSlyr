@@ -781,17 +781,18 @@
       const self = this;
       const reactTweets = [];
       const ONCE_MAX_LOADING = 50;
-      let ninjaFlg = false;
       let nextTweet = officialTweet.nextElementSibling;
+      let ninjaFlg = false;
       let cnt = 0;
 
+      ninjaFlg = NinjaManager.isNinja(nextTweet);
       self.seamlessReactStatus = self.seamlessReact_.loading;
-      while (nextTweet.className === 'list_box type_tweet') {
+      while (ninjaFlg === false && nextTweet.className === 'list_box type_tweet') {
       // while (nextTweet !== null) {
         // 最大件数の読み込みが終わったら一旦それ以上の反応ツイート抽出を停止し
         // 次の公式ツイートが見つかるまでループする
         // (現在までの読み込みページ内に次の公式ツイートが無ければ取りこぼしがあると判断)
-        if (cnt > ONCE_MAX_LOADING && self.seamlessReactStatus !== self.seamlessReact_.suspend) {
+        if (cnt >= ONCE_MAX_LOADING && self.seamlessReactStatus !== self.seamlessReact_.suspend) {
           self.seamlessReactStatus = self.seamlessReact_.suspend;
           // console.log('react full');
         } else if (nextTweet.className === 'list_box type_tweet' && self.seamlessReactStatus === self.seamlessReact_.loading) {
@@ -806,16 +807,13 @@
           reactTweets.push(cloneTweet);
         }
         nextTweet = nextTweet.nextElementSibling;
+        ninjaFlg = NinjaManager.isNinja(nextTweet);
         cnt++;
       }
 
       // 残り実況ツイート数用(いつか実装する/現状うまく動かない…)
       const reactCounter = document.getElementById(self.ClassName.REACT_COUNTER());
-      const tweets = self.reactModal_.modalContentsMain.querySelectorAll('.tweet');
-      let reactCount = tweets.length;
-      // 最初の表示時は実況ツイートのDOM生成前なので0
-      if (reactCount === 0) reactCount = reactTweets.length;
-      let remCount = cnt - reactCount;
+      let remCount = cnt - reactTweets.length;
       if (remCount < 0) remCount = '0';
       reactCounter.textContent = `残り実況ツイート数(${remCount})`;
 
