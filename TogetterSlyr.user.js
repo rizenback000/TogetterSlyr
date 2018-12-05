@@ -309,7 +309,7 @@
       this.modalContents.style.padding = '5px 20px 10px';
       this.modalContents.style.paddingTop = '0 px';
       this.modalContents.style.border = '2px solid #aaa';
-      this.modalContents.style.zIndex = '2';
+      this.modalContents.style.zIndex = '99';
       this.modalContents.style.position = 'fixed';
       this.modalContents.style.backgroundColor = '#fff';
       this.modalContents.style.overflow = 'hidden';
@@ -320,7 +320,7 @@
       this.modalContentsMain.style.overflowY = 'auto';
       this.modalContentsMain.style.position = 'relative';
 
-      this.modalOverlay.style.zIndex = '2';
+      this.modalOverlay.style.zIndex = '98';
       this.modalOverlay.style.display = 'none';
       this.modalOverlay.style.position = 'fixed';
       this.modalOverlay.style.top = '0';
@@ -518,6 +518,7 @@
         yet: 0,
         loading: 1,
         complete: 2,
+        suspend: 3,
       };
       this.seamlessReactStatus = this.seamlessReact_.yet;
       // ステータステキスト
@@ -627,7 +628,7 @@
       Array.from(twList, (tweet, i) => {
         if (NinjaManager.isNinja(tweet)) {
           // イベント設定済みかどうかを独自クラスで判断する
-          const twBox = tweet.querySelector(`.tweet_wrap:not(.${self.ClassName.EVENT_CONFIGED()})`);
+          const twBox = tweet.querySelector(`.tweet:not(.${self.ClassName.EVENT_CONFIGED()})`);
           if (twBox !== null) {
             // Togetter公式のLazyLoadエラー.error(ページ閲覧時に表示されたもの)未設定かつ、
             // 独自onerror未設定の公式ツイートのアイコン画像はキャッシュに残ってるはずなので
@@ -734,14 +735,18 @@
 
       self.seamlessReactStatus = self.seamlessReact_.loading;
       while (nextTweet !== null) {
-        // 次の公式ツイート or 50件の読み込みが終わったら
+        // 最大件数の読み込みが終わったら一旦それ以上の反応ツイート抽出を停止し
+        // 次の公式ツイートが見つかるまでループする
+        // (現在までの読み込みページ内に次の公式ツイートが無ければ取りこぼしがあると判断)
         ninjaFlg = NinjaManager.isNinja(nextTweet);
-        if (ninjaFlg) {
+        if (cnt > ONCE_MAX_LOADING && self.seamlessReactStatus !== self.seamlessReact_.suspend) {
+          self.seamlessReactStatus = self.seamlessReact_.suspend;
+          // console.log('react full');
+        } else if (ninjaFlg) {
           self.seamlessReactStatus = self.seamlessReact_.complete;
+          // console.log('ninja!');
           break;
-        } else if (cnt > ONCE_MAX_LOADING) {
-          break;
-        } else if (nextTweet.className === 'list_box type_tweet') {
+        } else if (nextTweet.className === 'list_box type_tweet' && self.seamlessReactStatus === self.seamlessReact_.loading) {
           const cloneTweet = nextTweet.cloneNode(true);
           cloneTweet.style.display = 'block';
           reactTweets.push(cloneTweet);
@@ -749,12 +754,13 @@
         nextTweet = nextTweet.nextElementSibling;
         cnt++;
       }
+
       // 公式ツイートが出てこないまま終わった場合、次のツイートの取りこぼしがある可能性を示唆
       // console.log(`${self.seamlessReactStatus} !== ${self.seamlessReact_.complete}  ${self.seamlessReactStatus !== self.seamlessReact_.complete}`);
       // console.log(!ninjaFlg && self.seamlessReactStatus !== self.seamlessReact_.complete);
       if (!ninjaFlg && self.seamlessReactStatus !== self.seamlessReact_.complete) {
         let acqPage = self.statusBottom_.previousElementSibling.dataset.acqpage;
-        // acqPageが取得できない場合は1ページ目と過程する
+        // acqPageが取得できない場合は1ページ目と仮定する
         if (typeof acqPage === 'undefined') acqPage = 1;
         const loadedPage = parseInt(acqPage);
         // 読み込み済み
@@ -765,8 +771,8 @@
           const newInfo = document.createElement('div');
           newInfo.id = self.ClassName.REACT_INFO();
           newInfo.style.fontWeight = 'bold';
-          newInfo.innerHTML = `◆${self.SCRIPT_NAME}◆<br>次のページにも実況ツイートが残っています。<br>`+
-          'もし取りこぼした実況ツイートも確認したい場合、次の公式ツイートを読み込んでから再度表示させてください。';
+          newInfo.innerHTML = `◆${self.SCRIPT_NAME}◆<br>次のページにも実況ツイートが残っている可能性があります。<br>`+
+           'もし取りこぼした実況ツイートも確認したい場合、一旦実況ツイートを閉じてスクロールし、次の公式ツイートを読み込んでから再度表示させてください。';
           reactTweets.push(newInfo);
         }
       }
