@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.7.2
+// @version     1.7.3
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -746,7 +746,6 @@
     seamlessReactLoad() {
       const self = this;
 
-      // 次のページ読み込み中/完了時の場合は処理を行わない
       if (self.seamlessReactStatus !== self.seamlessReact_.complete ) {
         const mainBox = self.reactModal_.modalContentsMain;
         const scrollPos = mainBox.scrollTop + mainBox.clientHeight;
@@ -786,19 +785,21 @@
       let cnt = 0;
 
       self.seamlessReactStatus = self.seamlessReact_.loading;
-      while (nextTweet !== null) {
+      while (nextTweet.className === 'list_box type_tweet') {
+      // while (nextTweet !== null) {
         // 最大件数の読み込みが終わったら一旦それ以上の反応ツイート抽出を停止し
         // 次の公式ツイートが見つかるまでループする
         // (現在までの読み込みページ内に次の公式ツイートが無ければ取りこぼしがあると判断)
-        ninjaFlg = NinjaManager.isNinja(nextTweet);
         if (cnt > ONCE_MAX_LOADING && self.seamlessReactStatus !== self.seamlessReact_.suspend) {
           self.seamlessReactStatus = self.seamlessReact_.suspend;
           // console.log('react full');
-        } else if (ninjaFlg) {
-          self.seamlessReactStatus = self.seamlessReact_.complete;
-          // console.log('ninja!');
-          break;
         } else if (nextTweet.className === 'list_box type_tweet' && self.seamlessReactStatus === self.seamlessReact_.loading) {
+          // 逐次読みのツイートに次の公式ツイートが来たら逐次読みを完了とする
+          if (NinjaManager.isNinja(nextTweet)) {
+            self.seamlessReactStatus = self.seamlessReact_.complete;
+            // console.log('ninja!');
+            break;
+          }
           const cloneTweet = nextTweet.cloneNode(true);
           cloneTweet.style.display = 'block';
           reactTweets.push(cloneTweet);
