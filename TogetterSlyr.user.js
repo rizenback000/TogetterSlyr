@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.7.0
+// @version     1.7.1
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -415,7 +415,7 @@
      */
     show(callerTweet) {
       // console.log('show');
-
+      const self = this;
       // 現在のスクロール位置を記録
       const dElm = document.documentElement;
       const dBody = document.body;
@@ -426,7 +426,10 @@
       this.modalHeader.innerHTML = '';
       this.modalContentsMain.innerHTML = '';
 
-      const eve = new CustomEvent('modalShow', {detail: callerTweet});
+      const detail = {callerTweet: callerTweet,
+                      windowScrollXPos: self.windowScrollXPos_,
+                      windowScrollYPos: self.windowScrollYPos_};
+      const eve = new CustomEvent('modalShow', {detail: detail});
       eve.initEvent('modalShow', true, false);
       document.body.dispatchEvent(eve);
 
@@ -445,6 +448,10 @@
      * @return {void}
      */
     hide() {
+      const eve = new CustomEvent('modalHide');
+      eve.initEvent('modalHide', true, false);
+      document.body.dispatchEvent(eve);
+
       this.modalContents.style.display = 'none';
       this.modalOverlay.style.display = 'none';
       this.lazyDestroy();
@@ -570,7 +577,10 @@
       // モーダル表示時のイベント
       // 本当にこんな実装でいいのか全然わからん
       document.addEventListener('modalShow', (e) => {
-        const twNinja = e.detail;
+        const twNinja = e.detail.callerTweet;
+
+        document.body.style.overflow = 'hidden';
+        document.querySelector('html').style.overflow = 'hidden';
 
         //ヘッダ生成
         const dispUrl = twNinja.dataset.acqurl;
@@ -608,6 +618,14 @@
         twBox.appendChild(twFragment);
         self.reactModal_.modalContentsMain.appendChild(twBox);
         self.seamlessReactStatus = self.seamlessReact_.yet;
+      });
+
+
+      // モーダル非表示時のイベント
+      // 本当にこんな実装でいいのか全然わからん
+      document.addEventListener('modalHide', () => {
+        document.body.style.overflow = '';
+        document.querySelector('html').style.overflow = '';
       });
 
       // ページに追加
