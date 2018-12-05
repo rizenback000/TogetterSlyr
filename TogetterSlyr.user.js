@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.7.3
+// @version     1.7.4
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -585,7 +585,7 @@
         //ヘッダ生成
         const dispUrl = twNinja.dataset.acqurl;
         let dispPage = twNinja.dataset.acqpage;
-        if (typeof dispPage === 'undefined') dispPage = 1;
+        if (typeof dispPage === 'undefined') dispPage = self.getNowPage();
         const headerInfo = document.createElement('p');
         headerInfo.id = self.ClassName.REACT_HEADER_INFO();
         headerInfo.style.textAlign = 'center';
