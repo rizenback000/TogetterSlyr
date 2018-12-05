@@ -25,8 +25,5 @@ FirefoxかGoogleChromeのどちらかでアドオン「Tampermonkey」をイン�
 ⇒コメント逐次読み込み形式に変更した為、発生しなくなりました。
 　ただしものすごい量を読み込み続ければ当然ブラウザ自体が重くなる(はず)なのでご注意を。
 
-# 既知の不具合
-1. [実況ツイートの逐次読み込み時に「次のページにも実況ツイートが残っている～」が表示されることがある](https://github.com/rizenback000/TogetterSlyr/issues/6)
-
 ## License
 MIT
