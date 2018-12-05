@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.7.1
+// @version     1.7.2
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -567,7 +567,7 @@
           self.setStatusText(`スクロールしていくと自動的に次のページを読み込みます`+
           '<br>(AutoPagerizeのようなアドオンなどは無効にしてください)');
           // シームレスロード
-          window.onscroll = () => self.seamlessLoad();
+          document.body.onscroll = () => self.seamlessLoad();
         }else{
           self.getTweetBox().appendChild(self.statusBottom_);
         }
@@ -633,7 +633,6 @@
       titleBox.appendChild(this.loadBtn_);
 
       // シームレスロード
-      window.onscroll = () => self.seamlessLoad();
       this.reactModal_.modalContentsMain.onscroll = () => self.seamlessReactLoad();
     }
 
