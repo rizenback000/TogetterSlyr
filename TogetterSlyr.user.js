@@ -597,11 +597,11 @@
         headerInfo.appendChild(a);
         self.reactModal_.modalHeader.appendChild(headerInfo);
 
-        // 残り実況ツイート数用(いつか実装する)
-        // const reactCounter = document.createElement('span');
-        // reactCounter.id = self.ClassName.REACT_COUNTER();
-        // reactCounter.style.marginLeft = '10px';
-        // headerInfo.appendChild(reactCounter);
+        // 残り実況ツイート数表示用パーツ
+        const reactCounter = document.createElement('span');
+        reactCounter.id = self.ClassName.REACT_COUNTER();
+        reactCounter.style.marginLeft = '30px';
+        headerInfo.appendChild(reactCounter);
 
         // 公式ツイート部生成
         const ninjaTweet = document.createElement('div');
@@ -746,6 +746,7 @@
     seamlessReactLoad() {
       const self = this;
 
+      // 次のページ完了時の場合は処理を行わない
       if (self.seamlessReactStatus !== self.seamlessReact_.complete ) {
         const mainBox = self.reactModal_.modalContentsMain;
         const scrollPos = mainBox.scrollTop + mainBox.clientHeight;
@@ -773,7 +774,7 @@
      * getReactTweets - 公式ツイートの反応ツイートを抜き出す
      *
      * @param  {Element} officialTweet 反応ツイートの基準となる公式ツイート
-     * @return {Element[]}               配列に格納された反応ツイート
+     * @return {Element[]} 配列に格納された反応ツイート
      */
     getReactTweets(officialTweet) {
       // console.log('getReactTweets');
@@ -808,16 +809,15 @@
         cnt++;
       }
 
-      // 残り実況ツイート数用(いつか実装する/現状うまく動かない…)
-      // const reactCounter = document.getElementById(self.ClassName.REACT_COUNTER());
-      // const tweets = self.reactModal_.modalContentsMain.querySelectorAll('.tweet');
-      // let reactCount = tweets.length;
-      // // 最初の表示時は実況ツイートのDOM生成前なので0
-      // if (reactCount === 0) reactCount = reactTweets.length;
-      // let remCount = cnt - reactCount;
-      // console.log(`${cnt} - ${reactCount};`)
-      // if (remCount < 0) remCount = '0';
-      // reactCounter.textContent = `残り実況ツイート数(${remCount})`;
+      // 残り実況ツイート数表示
+      const reactCounter = document.getElementById(self.ClassName.REACT_COUNTER());
+      const tweets = self.reactModal_.modalContentsMain.querySelectorAll('.tweet');
+      let reactCount = tweets.length;
+      // 最初の表示時は実況ツイートのDOM生成前なので0
+      if (reactCount === 0) reactCount = reactTweets.length;
+      let remCount = cnt - reactCount;
+      if (remCount < 0) remCount = '0';
+      reactCounter.textContent = `残り実況ツイート数(${remCount})`;
 
 
       // 公式ツイートが出てこないまま終わった場合、次のツイートの取りこぼしがある可能性を示唆
