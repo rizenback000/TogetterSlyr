@@ -2,7 +2,7 @@
 // @name        TogetterSlyr
 // @namespace   https://github.com/rizenback000/TogetterSlyr
 // @include     https://togetter.com/li/*
-// @version     1.7.4
+// @version     1.7.3
 // @description togetterのニンジャスレイヤーまとめを読みやすくする
 // @author      rizenback000
 // @require     https://rawgit.com/tuupola/jquery_lazyload/2.x/lazyload.js
@@ -567,7 +567,17 @@
           self.setStatusText(`スクロールしていくと自動的に次のページを読み込みます`+
           '<br>(AutoPagerizeのようなアドオンなどは無効にしてください)');
           // シームレスロード
-          document.body.onscroll = () => self.seamlessLoad();
+          let scrollFlag = true;
+          document.addEventListener('scroll', () => {
+            if(scrollFlag){
+              scrollFlag = false;
+              setTimeout(()=>{
+                self.seamlessLoad();
+                scrollFlag = true;
+                return scrollFlag;
+              }, 500);
+            }
+          }, {passive: true});
         }else{
           self.getTweetBox().appendChild(self.statusBottom_);
         }
@@ -585,7 +595,7 @@
         //ヘッダ生成
         const dispUrl = twNinja.dataset.acqurl;
         let dispPage = twNinja.dataset.acqpage;
-        if (typeof dispPage === 'undefined') dispPage = self.getNowPage();
+        if (typeof dispPage === 'undefined') dispPage = 1;
         const headerInfo = document.createElement('p');
         headerInfo.id = self.ClassName.REACT_HEADER_INFO();
         headerInfo.style.textAlign = 'center';
@@ -597,7 +607,7 @@
         headerInfo.appendChild(a);
         self.reactModal_.modalHeader.appendChild(headerInfo);
 
-        // 残り実況ツイート数表示用パーツ
+        // 残り実況ツイート数用(いつか実装する)
         const reactCounter = document.createElement('span');
         reactCounter.id = self.ClassName.REACT_COUNTER();
         reactCounter.style.marginLeft = '30px';
@@ -633,7 +643,17 @@
       titleBox.appendChild(this.loadBtn_);
 
       // シームレスロード
-      this.reactModal_.modalContentsMain.onscroll = () => self.seamlessReactLoad();
+      let scrollFlag = true;
+      this.reactModal_.modalContentsMain.addEventListener('scroll', () => {
+        if(scrollFlag){
+          scrollFlag = false;
+          setTimeout(()=>{
+            self.seamlessReactLoad();
+            scrollFlag = true;
+            return scrollFlag;
+          }, 500);
+        }
+      }, {passive: true});
     }
 
 
@@ -719,7 +739,7 @@
      */
     seamlessLoad() {
       const self = this;
-
+      console.log('seamlessLoad');
       // 次のページ読み込み中の場合は処理を行わない
       if (self.seamlessNextUrl_ !== '') {
         const tgtRect = self.getPagination().getBoundingClientRect();
@@ -745,7 +765,7 @@
      */
     seamlessReactLoad() {
       const self = this;
-
+      console.log('seamlessReactLoad');
       // 次のページ完了時の場合は処理を行わない
       if (self.seamlessReactStatus !== self.seamlessReact_.complete ) {
         const mainBox = self.reactModal_.modalContentsMain;
@@ -811,7 +831,7 @@
         cnt++;
       }
 
-      // 残り実況ツイート数表示
+      // 残り実況ツイート数用(いつか実装する/現状うまく動かない…)
       const reactCounter = document.getElementById(self.ClassName.REACT_COUNTER());
       let remCount = cnt - reactTweets.length;
       if (remCount < 0) remCount = '0';
